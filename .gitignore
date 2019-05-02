@@ -1,3 +1,10 @@
+# pycharm
+.idea
+
+# System diagnostics
+diagnostics_map*
+private_*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

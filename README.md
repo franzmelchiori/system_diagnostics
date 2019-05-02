@@ -1,2 +1,2 @@
 # system_diagnostics
-system_diagnostics
+System diagnostics
