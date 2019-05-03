@@ -295,7 +295,7 @@ class CustomerHostDiagnostics(CustomerHostData):
                 influx_np_data = np.array(influx_data)
                 influx_np_feature_samples = influx_np_data.shape[0]
                 if influx_np_feature_samples != 0:
-                    influx_pd_date = pd.DatetimeIndex(influx_np_data[:, 0])
+                    influx_pd_date = pd.to_datetime(influx_np_data[:, 0])
                     influx_np_values = influx_np_data[:, 1:]
                     influx_pd_data = pd.DataFrame(
                         influx_np_values, dtype='float64',
