@@ -23,6 +23,7 @@ import sys
 import os
 import argparse
 import json
+import shelve
 import urllib.parse as urlparse
 import urllib.request as urlrequest
 
@@ -220,16 +221,28 @@ class CustomerUnitData(CustomerMeasureData):
 
 class CustomerHostDiagnostics(CustomerHostData):
     def __init__(self, customer_name, network_name, data_source_name,
-                 database_name, host_name, time_from, time_to, json_path=''):
+                 database_name, host_name, time_from, time_to, json_path='',
+                 local_data=False):
         CustomerHostData.__init__(self, customer_name, network_name,
                                   data_source_name, database_name, json_path)
+        # self.customer_name = customer_name
         self.host_name = host_name
         self.measurements = []
         self.load_measurements()
         self.time_from = time_from
         self.time_to = time_to
+        self.time_from_code = self.time_from.replace('-', '')
+        self.time_from_code = self.time_from_code.replace(' ', '')
+        self.time_from_code = self.time_from_code.replace(':', '')
+        self.time_to_code = self.time_to.replace('-', '')
+        self.time_to_code = self.time_to_code.replace(' ', '')
+        self.time_to_code = self.time_to_code.replace(':', '')
         self.measure_pd_dataframes = []
-        self.get_measurements()
+        if local_data:
+            self.shelve_measurements(load_shelve='True')
+        else:
+            self.get_measurements()
+            self.shelve_measurements()
 
     def __repr__(self):
         print_message = 'Customer name: {0}\n'.format(self.customer_name)
@@ -307,6 +320,38 @@ class CustomerHostDiagnostics(CustomerHostData):
                         columns=measurement_unit_filter_names,
                         index=[])
                 self.measure_pd_dataframes.append(influx_pd_data)
+        return True
+
+    def shelve_measurements(self, load_shelve=False):
+        shelve_filename = ''
+        shelve_filename += '{0}_'.format(self.customer_name)
+        shelve_filename += '{0}_'.format(self.host_name)
+        shelve_filename += '{0}_'.format(self.time_from_code)
+        shelve_filename += '{0}'.format(self.time_to_code)
+        shelve_message = ''
+        shelve_message += '{0} '.format(shelve_filename)
+        if load_shelve:
+            if os.path.isfile('./{0}.dat'.format(shelve_filename)):
+                shelve_file = shelve.open(shelve_filename)
+                self.measure_pd_dataframes = shelve_file['measure_pd_dataframes']
+                shelve_file.close()
+                shelve_message += 'has been LOADED from the shelve file.'
+            else:
+                shelve_message += 'has NOT been found.'
+        else:
+            shelve_file = shelve.open(shelve_filename)
+            shelve_file['customer_name'] = self.customer_name
+            shelve_file['network_name'] = self.network_name
+            shelve_file['data_source_name'] = self.data_source_name
+            shelve_file['data_source_ip_port'] = self.data_source_ip_port
+            shelve_file['database_name'] = self.database_name
+            shelve_file['host_name'] = self.host_name
+            shelve_file['time_from'] = self.time_from
+            shelve_file['time_to'] = self.time_to
+            shelve_file['measure_pd_dataframes'] = self.measure_pd_dataframes
+            shelve_file.close()
+            shelve_message += 'has been SAVED in the shelve file.'
+        print(shelve_message)
         return True
 
 
