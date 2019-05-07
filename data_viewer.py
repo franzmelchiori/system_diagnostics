@@ -19,11 +19,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from pandas.plotting import register_matplotlib_converters
-register_matplotlib_converters()
-
 import matplotlib.pyplot as plt
+from pandas.plotting import register_matplotlib_converters
+
 plt.style.use('seaborn-whitegrid')
+register_matplotlib_converters()
 
 
 def view_pd_dataframe(pd_dataframe):

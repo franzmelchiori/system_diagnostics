@@ -239,7 +239,7 @@ class CustomerHostDiagnostics(CustomerHostData):
         self.time_to_code = self.time_to_code.replace(':', '')
         self.measure_pd_dataframes = []
         if local_data:
-            self.shelve_measurements(load_shelve='True')
+            self.shelve_measurements(load_shelve=True)
         else:
             self.get_measurements()
             self.shelve_measurements()
@@ -278,6 +278,7 @@ class CustomerHostDiagnostics(CustomerHostData):
             influx_unit_names = measurement['units']
             measurement_unit_filters = [[]]
             if 'filters' in measurement:
+                print(measurement['filters'])
                 unit_filter_maps = measurement['filters']
                 unit_filters = UnitFilters(unit_filter_maps)
                 measurement_unit_filters = unit_filters.lists
@@ -333,7 +334,8 @@ class CustomerHostDiagnostics(CustomerHostData):
         if load_shelve:
             if os.path.isfile('./{0}.dat'.format(shelve_filename)):
                 shelve_file = shelve.open(shelve_filename)
-                self.measure_pd_dataframes = shelve_file['measure_pd_dataframes']
+                self.measure_pd_dataframes = shelve_file[
+                    'measure_pd_dataframes']
                 shelve_file.close()
                 shelve_message += 'has been LOADED from the shelve file.'
             else:
