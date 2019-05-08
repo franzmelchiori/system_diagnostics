@@ -225,7 +225,6 @@ class CustomerHostDiagnostics(CustomerHostData):
                  local_data=False):
         CustomerHostData.__init__(self, customer_name, network_name,
                                   data_source_name, database_name, json_path)
-        # self.customer_name = customer_name
         self.host_name = host_name
         self.measurements = []
         self.load_measurements()
