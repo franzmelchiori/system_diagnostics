@@ -277,8 +277,8 @@ class CustomerHostDiagnostics(CustomerHostData):
             influx_measurement_name = measurement['measurement_name']
             influx_unit_names = measurement['units']
             measurement_unit_filters = [[]]
+
             if 'filters' in measurement:
-                print(measurement['filters'])
                 unit_filter_maps = measurement['filters']
                 unit_filters = UnitFilters(unit_filter_maps)
                 measurement_unit_filters = unit_filters.lists
@@ -360,7 +360,7 @@ class CustomerHostDiagnostics(CustomerHostData):
 class UnitFilters:
     def __init__(self, unit_filter_maps):
         self.maps = unit_filter_maps
-        self.lists = self.get_filter_lists(self.maps)
+        self.lists = self.get_filter_lists(self.maps, [], [])
 
     def __repr__(self):
         print_message = ''
@@ -368,8 +368,8 @@ class UnitFilters:
             print_message += '{}\n'.format(f)
         return print_message
 
-    def get_filter_lists(self, filter_maps, previous_filters=[],
-                         filter_lists=[]):
+    def get_filter_lists(self, filter_maps, previous_filters,
+                         filter_lists):
         for filter_map in filter_maps:
             actual_filters = self.get_filters(filter_map)
             if previous_filters:
@@ -423,7 +423,7 @@ def load_json(file_path):
 
 def get_influx_data(influx_ip_port, database_name, host_name,
                     measurement_name, unit_names, time_from, time_to,
-                    unit_filter=[], time_zone='Europe/Rome',
+                    unit_filter, time_zone='Europe/Rome',
                     print_influx_query_request=False):
     influx_base_url = 'http://{}/query'.format(influx_ip_port)
     influx_query_list = []
