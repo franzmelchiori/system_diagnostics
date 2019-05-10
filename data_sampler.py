@@ -19,29 +19,53 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import numpy as np
 import pandas as pd
 
 
-def get_pd_dataframe_sampling_period(pd_dataframe):
+def get_pd_dataframe_sampling_period(pd_dataframe, sampling_precision='1s'):
     pd_dataframe_delta = pd_dataframe.index[0] - pd_dataframe.index[1]
-    pd_second_delta = pd.to_timedelta('1s')
+    pd_second_delta = pd.to_timedelta(sampling_precision)
     pd_dataframe_sampling_period = int(pd_dataframe_delta/pd_second_delta)
     return pd_dataframe_sampling_period
 
 
-def get_pd_dataframes_minimum_sampling_period(pd_dataframes):
+def get_pd_dataframes_minimum_sampling_period(pd_dataframes,
+                                              sampling_precision='1s'):
     pd_dataframes_sampling_periods = []
     for pd_dataframe in pd_dataframes:
-        pd_dataframe_sampling_period = get_pd_dataframe_sampling_period(
-            pd_dataframe)
+        if not pd_dataframe.empty:
+            pd_dataframe_sampling_period = get_pd_dataframe_sampling_period(
+                pd_dataframe, sampling_precision)
         pd_dataframes_sampling_periods.append(pd_dataframe_sampling_period)
     pd_dataframes_minimum_sampling_period = min(pd_dataframes_sampling_periods)
-    print(pd_dataframes_sampling_periods)
     return pd_dataframes_minimum_sampling_period
 
 
+def get_down_rounded_sampling_period(raw_sampling_period, sampling_unit='s'):
+    if sampling_unit == 's':
+        hour_max_sampling_period = 3600
+    elif sampling_unit == 'ms':
+        hour_max_sampling_period = 3600000
+    hour_all_sampling_periods = np.arange(1, hour_max_sampling_period+1)
+    hour_label_valid_sampling_periods = np.mod(hour_max_sampling_period,
+                                               hour_all_sampling_periods) == 0
+    hour_valid_sampling_periods = hour_all_sampling_periods[
+        hour_label_valid_sampling_periods]
+    hour_label_down_rounded_sampling_periods = np.floor_divide(
+        hour_valid_sampling_periods, raw_sampling_period+1) == 0
+    for label_sampling_period, sampling_period in zip(
+            hour_label_down_rounded_sampling_periods,
+            hour_valid_sampling_periods):
+        if label_sampling_period:
+            down_rounded_sampling_period = int(sampling_period)
+        else:
+            break
+    return down_rounded_sampling_period
+
+
 def main():
-    pass
+    print(get_down_rounded_sampling_period(7))
 
 
 if __name__ == '__main__':
