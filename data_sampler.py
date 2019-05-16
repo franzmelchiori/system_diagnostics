@@ -22,11 +22,26 @@
 import numpy as np
 import pandas as pd
 
+import data_viewer
 
-def get_pd_dataframe_sampling_period(pd_dataframe, sampling_precision='1s'):
-    pd_dataframe_delta = pd_dataframe.index[0] - pd_dataframe.index[1]
+
+def get_pd_dataframe_minimum_sampling_period(pd_dataframe,
+                                             sampling_precision='1s'):
+    pd_dataframe_sampling_periods = []
     pd_second_delta = pd.to_timedelta(sampling_precision)
-    pd_dataframe_sampling_period = int(pd_dataframe_delta/pd_second_delta)
+    if not pd_dataframe.empty:
+        pd_dataframe_range = range(pd_dataframe.shape[0] - 1)
+        for current_index in pd_dataframe_range:
+            next_index = current_index + 1
+            current_timestamp = pd_dataframe.index[current_index]
+            next_timestamp = pd_dataframe.index[next_index]
+            pd_dataframe_delta = current_timestamp - next_timestamp
+            pd_dataframe_sampling_periods.append(int(
+                pd_dataframe_delta/pd_second_delta))
+    if pd_dataframe_sampling_periods:
+        pd_dataframe_sampling_period = min(pd_dataframe_sampling_periods)
+    else:
+        pd_dataframe_sampling_period = False
     return pd_dataframe_sampling_period
 
 
@@ -35,18 +50,30 @@ def get_pd_dataframes_minimum_sampling_period(pd_dataframes,
     pd_dataframes_sampling_periods = []
     for pd_dataframe in pd_dataframes:
         if not pd_dataframe.empty:
-            pd_dataframe_sampling_period = get_pd_dataframe_sampling_period(
-                pd_dataframe, sampling_precision)
-        pd_dataframes_sampling_periods.append(pd_dataframe_sampling_period)
-    pd_dataframes_minimum_sampling_period = min(pd_dataframes_sampling_periods)
+            pd_dataframe_sampling_period = \
+                get_pd_dataframe_minimum_sampling_period(
+                    pd_dataframe, sampling_precision)
+            if pd_dataframe_sampling_period:
+                pd_dataframes_sampling_periods.append(
+                    pd_dataframe_sampling_period)
+    if pd_dataframes_sampling_periods:
+        pd_dataframes_minimum_sampling_period = min(
+            pd_dataframes_sampling_periods)
+    else:
+        pd_dataframes_minimum_sampling_period = False
     return pd_dataframes_minimum_sampling_period
 
 
 def get_down_rounded_sampling_period(raw_sampling_period, sampling_unit='s'):
     if sampling_unit == 's':
         hour_max_sampling_period = 3600
+        down_rounded_sampling_period = 3600
     elif sampling_unit == 'ms':
         hour_max_sampling_period = 3600000
+        down_rounded_sampling_period = 3600000
+    else:
+        hour_max_sampling_period = 3600
+        down_rounded_sampling_period = 3600
     hour_all_sampling_periods = np.arange(1, hour_max_sampling_period+1)
     hour_label_valid_sampling_periods = np.mod(hour_max_sampling_period,
                                                hour_all_sampling_periods) == 0
@@ -62,6 +89,37 @@ def get_down_rounded_sampling_period(raw_sampling_period, sampling_unit='s'):
         else:
             break
     return down_rounded_sampling_period
+
+
+def get_pd_dataframes_down_rounded_sampling_period(pd_dataframes,
+                                                   sampling_precision='1s'):
+    sampling_unit = 's'
+    pd_dataframes_down_rounded_sampling_period = False
+    if pd_dataframes:
+        pd_dataframes_minimum_sampling_period =\
+            get_pd_dataframes_minimum_sampling_period(pd_dataframes,
+                                                      sampling_precision)
+        if pd_dataframes_minimum_sampling_period:
+            pd_dataframes_down_rounded_sampling_period = \
+                get_down_rounded_sampling_period(
+                    pd_dataframes_minimum_sampling_period, sampling_unit)
+    return pd_dataframes_down_rounded_sampling_period
+
+
+def resample_pd_dataframes(pd_dataframes, sampling_precision='1s'):
+    sampling_unit = 's'
+    if pd_dataframes:
+        resampling_period = get_pd_dataframes_down_rounded_sampling_period(
+            pd_dataframes, sampling_precision)
+        resampling_period_string = '{0}{1}'.format(resampling_period,
+                                                   sampling_unit)
+        for pd_dataframe in pd_dataframes:
+            if not pd_dataframe.empty:
+                print(pd_dataframe)
+                pd_dataframe = pd_dataframe.resample(
+                    resampling_period_string).pad()
+                print(pd_dataframe)
+            break
 
 
 def main():
