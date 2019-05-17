@@ -93,7 +93,7 @@ def get_down_rounded_sampling_period(raw_sampling_period, sampling_unit='s'):
 
 def get_pd_dataframes_down_rounded_sampling_period(pd_dataframes,
                                                    sampling_precision='1s'):
-    sampling_unit = 's'
+    sampling_unit = get_sampling_unit(sampling_precision)
     pd_dataframes_down_rounded_sampling_period = False
     if pd_dataframes:
         pd_dataframes_minimum_sampling_period =\
@@ -107,7 +107,7 @@ def get_pd_dataframes_down_rounded_sampling_period(pd_dataframes,
 
 
 def resample_pd_dataframes(pd_dataframes, sampling_precision='1s'):
-    sampling_unit = 's'
+    sampling_unit = get_sampling_unit(sampling_precision)
     if pd_dataframes:
         resampling_period = get_pd_dataframes_down_rounded_sampling_period(
             pd_dataframes, sampling_precision)
@@ -117,13 +117,29 @@ def resample_pd_dataframes(pd_dataframes, sampling_precision='1s'):
             if not pd_dataframe.empty:
                 print(pd_dataframe)
                 pd_dataframe = pd_dataframe.resample(
-                    resampling_period_string).pad()
+                    resampling_period_string).mean()
                 print(pd_dataframe)
             break
 
 
+def get_sampling_unit(sampling_precision):
+    available_sampling_units = ['m', 's', 'ms']
+    available_sampling_units_string = ''.join(available_sampling_units)
+    sampling_precision_value = sampling_precision.strip(
+        available_sampling_units_string)
+    numbers_string = ''.join([str(n) for n in range(10)])
+    sampling_unit = sampling_precision.strip(numbers_string)
+    if not sampling_precision_value.isdecimal():
+        sampling_unit = False
+    if sampling_unit not in available_sampling_units:
+        sampling_unit = False
+    return sampling_unit
+
+
 def main():
-    print(get_down_rounded_sampling_period(7))
+    # print(get_down_rounded_sampling_period(7))
+    # print(get_sampling_unit('1321s'))
+    pass
 
 
 if __name__ == '__main__':
