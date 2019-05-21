@@ -16,8 +16,10 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see
+    <http://www.gnu.org/licenses/>.
 """
+
 
 import sys
 import os
@@ -33,6 +35,7 @@ import dateutil.parser as dateparse
 
 
 class CustomerNetworkData:
+
     def __init__(self, customer_name, json_path=''):
         self.customer_name = customer_name
         self.json_path = json_path
@@ -62,6 +65,7 @@ class CustomerNetworkData:
 
 
 class CustomerSourceData(CustomerNetworkData):
+
     def __init__(self, customer_name, network_name, json_path=''):
         CustomerNetworkData.__init__(self, customer_name, json_path)
         self.network_name = network_name
@@ -86,6 +90,7 @@ class CustomerSourceData(CustomerNetworkData):
 
 
 class CustomerDBData(CustomerSourceData):
+
     def __init__(self, customer_name, network_name, data_source_name,
                  json_path=''):
         CustomerSourceData.__init__(self, customer_name, network_name,
@@ -118,6 +123,7 @@ class CustomerDBData(CustomerSourceData):
 
 
 class CustomerHostData(CustomerDBData):
+
     def __init__(self, customer_name, network_name, data_source_name,
                  database_name, json_path=''):
         CustomerDBData.__init__(self, customer_name, network_name,
@@ -150,6 +156,7 @@ class CustomerHostData(CustomerDBData):
 
 
 class CustomerMeasureData(CustomerHostData):
+
     def __init__(self, customer_name, network_name, data_source_name,
                  database_name, host_name, json_path=''):
         CustomerHostData.__init__(self, customer_name, network_name,
@@ -184,11 +191,12 @@ class CustomerMeasureData(CustomerHostData):
 
 
 class CustomerUnitData(CustomerMeasureData):
+
     def __init__(self, customer_name, network_name, data_source_name,
                  database_name, host_name, measurement_name, json_path=''):
         CustomerMeasureData.__init__(self, customer_name, network_name,
-                                     data_source_name, database_name, host_name,
-                                     json_path)
+                                     data_source_name, database_name,
+                                     host_name, json_path)
         self.measurement_name = measurement_name
         self.units = []
         self.load_units()
@@ -205,7 +213,8 @@ class CustomerUnitData(CustomerMeasureData):
             self.database_name)
         print_message += 'Host name: {0}\n'.format(
             self.host_name)
-        print_message += 'Measurement name: {0}\n'.format(self.measurement_name)
+        print_message += 'Measurement name: {0}\n'.format(
+            self.measurement_name)
         print_message += 'Units: {0}\n'.format(self.units)
         return print_message
 
@@ -220,6 +229,7 @@ class CustomerUnitData(CustomerMeasureData):
 
 
 class CustomerHostDiagnostics(CustomerHostData):
+
     def __init__(self, customer_name, network_name, data_source_name,
                  database_name, host_name, time_from, time_to, json_path='',
                  local_data=False):
@@ -357,6 +367,7 @@ class CustomerHostDiagnostics(CustomerHostData):
 
 
 class UnitFilters:
+
     def __init__(self, unit_filter_maps):
         self.maps = unit_filter_maps
         self.lists = self.get_filter_lists(self.maps, [], [])
@@ -393,6 +404,7 @@ class UnitFilters:
 
 
 class DataNotFound(Exception):
+
     def __init__(self, data_name='', source_name=''):
         self.data_name = data_name
         self.source_name = source_name
@@ -426,12 +438,13 @@ def get_influx_data(influx_ip_port, database_name, host_name,
                     print_influx_query_request=False):
     influx_base_url = 'http://{}/query'.format(influx_ip_port)
     influx_query_list = []
-    influx_query_units = 'SELECT ' + '"{}"'.format('", "'.join(unit_names))
+    influx_query_units = 'SELECT '
+    influx_query_units += '"{}"'.format('", "'.join(unit_names))
     influx_query_list.append(influx_query_units)
     influx_query_measurement = 'FROM {}'.format(measurement_name)
     influx_query_list.append(influx_query_measurement)
-    influx_query_time = "WHERE time > '{}' ".format(time_from) + \
-                        "AND time < '{}'".format(time_to)
+    influx_query_time = "WHERE time > '{}' ".format(time_from)
+    influx_query_time += "AND time < '{}'".format(time_to)
     influx_query_list.append(influx_query_time)
     influx_query_filters = "AND host = '{}'".format(host_name)
     if unit_filter:

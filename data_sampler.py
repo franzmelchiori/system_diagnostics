@@ -16,8 +16,10 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see
+    <http://www.gnu.org/licenses/>.
 """
+
 
 import numpy as np
 import pandas as pd
@@ -108,9 +110,9 @@ def get_pd_dataframes_down_rounded_sampling_period(pd_dataframes,
 
 def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end):
     """
-       For each series in each dataframe, pad_pd_dataframes pads an entry at
-       the beginning and one at the end respectedly with the first and the last
-       available values at the given timestamps.
+       For each series in each dataframe, pad_pd_dataframes pads an
+       entry at the beginning and one at the end respectedly with the
+       first and the last available values at the given timestamps.
     """
     pd_index_start = pd.to_datetime([timestamp_start])
     pd_index_end = pd.to_datetime([timestamp_end])
@@ -153,9 +155,9 @@ def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end):
 
 def resample_pd_dataframes(pd_dataframes, sampling_precision='1s'):
     """
-       For each series in each dataframe, resample_pd_dataframes resamples the
-       time series at the maximum sampling frequency among them, so upsampling
-       the others.
+       For each series in each dataframe, resample_pd_dataframes
+       resamples the time series at the maximum sampling frequency among
+       them, so upsampling the others.
     """
     sampling_unit = get_sampling_unit(sampling_precision)
     pd_resampled_dataframes = []
@@ -226,7 +228,8 @@ def main():
         print(pd_dataframe)
     print()
     pd_dataframes = pad_pd_dataframes(
-        pd_dataframes, '2019-01-29 08:00:00+01:00', '2019-01-29 09:00:00+01:00')
+        pd_dataframes,
+        '2019-01-29 08:00:00+01:00', '2019-01-29 09:00:00+01:00')
     pd_dataframes = resample_pd_dataframes(pd_dataframes)
     pd_dataframes = fill_pd_dataframes(pd_dataframes)
     for pd_dataframe in pd_dataframes:

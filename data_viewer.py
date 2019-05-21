@@ -16,8 +16,10 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    along with this program.  If not, see
+    <http://www.gnu.org/licenses/>.
 """
+
 
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
@@ -35,7 +37,8 @@ def view_pd_dataframe(pd_dataframe):
         plt.plot(pd_dataframe, label=pd_dataframe_label)
         plt.legend()
     elif pd_dataframe_keys_size >= 2:
-        pd_dataframe_zip = zip(range(pd_dataframe_keys_size), pd_dataframe_keys)
+        pd_dataframe_zip = zip(range(pd_dataframe_keys_size),
+                               pd_dataframe_keys)
         fig, ax = plt.subplots(pd_dataframe_keys_size)
         for (key_count, pd_dataframe_key) in pd_dataframe_zip:
             pd_dataframe_label = pd_dataframe.keys()[key_count]
