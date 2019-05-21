@@ -114,10 +114,10 @@ def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end):
     """
     pd_index_start = pd.to_datetime([timestamp_start])
     pd_index_end = pd.to_datetime([timestamp_end])
+    pd_padded_dataframes = []
     if pd_dataframes:
         for pd_dataframe in pd_dataframes:
             if not pd_dataframe.empty:
-                print(pd_dataframe)
                 padding_start_dict = {}
                 for pd_series in pd_dataframe.columns:
                     pd_series_values = pd_dataframe[pd_series]
@@ -127,7 +127,6 @@ def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end):
                                 pd.Series(pd_series_value,
                                           index=pd_index_start)
                             break
-                print(padding_start_dict)
                 padding_end_dict = {}
                 for pd_series in pd_dataframe.columns:
                     pd_series_values = pd_dataframe[pd_series]
@@ -143,14 +142,23 @@ def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end):
                                 pd.Series(pd_series_back_value,
                                           index=pd_index_end)
                             break
-                print(padding_end_dict)
-                # pd_dataframe_padding = pd.DataFrame(padding_dict)
-                # pd_dataframe.join(pd_dataframe_padding)
-                # print(pd_dataframe)
+                pd_dataframe_padding_start = pd.DataFrame(padding_start_dict)
+                pd_dataframe_padding_end = pd.DataFrame(padding_end_dict)
+                pd_padded_dataframe = pd.concat([pd_dataframe,
+                                                 pd_dataframe_padding_start,
+                                                 pd_dataframe_padding_end])
+                pd_padded_dataframes.append(pd_padded_dataframe)
+    return pd_padded_dataframes
 
 
 def resample_pd_dataframes(pd_dataframes, sampling_precision='1s'):
+    """
+       For each series in each dataframe, resample_pd_dataframes resamples the
+       time series at the maximum sampling frequency among them, so upsampling
+       the others.
+    """
     sampling_unit = get_sampling_unit(sampling_precision)
+    pd_resampled_dataframes = []
     if pd_dataframes:
         resampling_period = get_pd_dataframes_down_rounded_sampling_period(
             pd_dataframes, sampling_precision)
@@ -158,11 +166,20 @@ def resample_pd_dataframes(pd_dataframes, sampling_precision='1s'):
                                                    sampling_unit)
         for pd_dataframe in pd_dataframes:
             if not pd_dataframe.empty:
-                print(pd_dataframe)
-                pd_dataframe = pd_dataframe.resample(
+                pd_resampled_dataframe = pd_dataframe.resample(
                     resampling_period_string).pad()
-                print(pd_dataframe)
-            break
+                pd_resampled_dataframes.append(pd_resampled_dataframe)
+    return pd_resampled_dataframes
+
+
+def fill_pd_dataframes(pd_dataframes):
+    pd_filled_dataframes = []
+    if pd_dataframes:
+        for pd_dataframe in pd_dataframes:
+            if not pd_dataframe.empty:
+                pd_filled_dataframe = pd_dataframe.fillna(method='ffill')
+                pd_filled_dataframes.append(pd_filled_dataframe)
+    return pd_filled_dataframes
 
 
 def get_sampling_unit(sampling_precision):
@@ -191,11 +208,28 @@ def main():
     index_test_02 = pd.date_range('2019-01-29 08:17:36.910000+01:00',
                                   periods=6, freq='5T')
     pd_series_test_02 = pd.Series(data_test_02, index=index_test_02)
-    pd_dataframe_test = pd.DataFrame({'pd_series_test_01': pd_series_test_01,
-                                     'pd_series_test_02': pd_series_test_02})
-    pad_pd_dataframes([pd_dataframe_test], '2019-01-29 08:00:00+01:00',
-                      '2019-01-29 09:00:00+01:00')
-    # resample_pd_dataframes([pd_dataframe_test])
+    pd_dataframe_test_01 = pd.DataFrame(
+        {'pd_series_test_01': pd_series_test_01,
+         'pd_series_test_02': pd_series_test_02})
+
+    data_test_03 = np.random.normal(0, 1, 10)
+    pd_series_test_03 = pd.Series(data_test_03, index=index_test_01)
+    data_test_04 = np.random.normal(0, 1, 6)
+    pd_series_test_04 = pd.Series(data_test_04, index=index_test_02)
+    pd_dataframe_test_02 = pd.DataFrame(
+        {'pd_series_test_03': pd_series_test_03,
+         'pd_series_test_04': pd_series_test_04})
+
+    pd_dataframes = [pd_dataframe_test_01, pd_dataframe_test_02]
+
+    # print(pd_dataframes)
+    # data_viewer.view_pd_dataframes(pd_dataframes)
+    pd_dataframes = pad_pd_dataframes(
+        pd_dataframes, '2019-01-29 08:00:00+01:00', '2019-01-29 09:00:00+01:00')
+    pd_dataframes = resample_pd_dataframes(pd_dataframes)
+    pd_dataframes = fill_pd_dataframes(pd_dataframes)
+    # print(pd_dataframes)
+    # data_viewer.view_pd_dataframes(pd_dataframes)
 
 
 if __name__ == '__main__':
