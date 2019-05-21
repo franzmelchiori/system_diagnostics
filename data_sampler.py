@@ -222,18 +222,17 @@ def main():
 
     pd_dataframes = [pd_dataframe_test_01, pd_dataframe_test_02]
 
-    # print(pd_dataframes)
-    # data_viewer.view_pd_dataframes(pd_dataframes)
+    for pd_dataframe in pd_dataframes:
+        print(pd_dataframe)
+    print()
     pd_dataframes = pad_pd_dataframes(
         pd_dataframes, '2019-01-29 08:00:00+01:00', '2019-01-29 09:00:00+01:00')
     pd_dataframes = resample_pd_dataframes(pd_dataframes)
     pd_dataframes = fill_pd_dataframes(pd_dataframes)
-    # print(pd_dataframes)
-    # data_viewer.view_pd_dataframes(pd_dataframes)
+    for pd_dataframe in pd_dataframes:
+        print(pd_dataframe)
+    data_viewer.view_pd_dataframes(pd_dataframes)
 
 
 if __name__ == '__main__':
-    if False:
-        pass
-    else:
-        main()
+    main()
