@@ -33,6 +33,8 @@ import numpy as np
 import pandas as pd
 import dateutil.parser as dateparse
 
+import data_sampler
+
 
 class CustomerNetworkData:
 
@@ -231,8 +233,8 @@ class CustomerUnitData(CustomerMeasureData):
 class CustomerHostDiagnostics(CustomerHostData):
 
     def __init__(self, customer_name, network_name, data_source_name,
-                 database_name, host_name, time_from, time_to, json_path='',
-                 local_data=False):
+                 database_name, host_name, time_from, time_to,
+                 time_zone='Europe/Rome', json_path='', local_data=False):
         CustomerHostData.__init__(self, customer_name, network_name,
                                   data_source_name, database_name, json_path)
         self.host_name = host_name
@@ -240,12 +242,14 @@ class CustomerHostDiagnostics(CustomerHostData):
         self.load_measurements()
         self.time_from = time_from
         self.time_to = time_to
+        self.time_zone = time_zone
         self.time_from_code = self.time_from.replace('-', '')
         self.time_from_code = self.time_from_code.replace(' ', '')
         self.time_from_code = self.time_from_code.replace(':', '')
         self.time_to_code = self.time_to.replace('-', '')
         self.time_to_code = self.time_to_code.replace(' ', '')
         self.time_to_code = self.time_to_code.replace(':', '')
+        self.time_zone_code = self.time_zone.replace('/', '')
         self.measure_pd_dataframes = []
         if local_data:
             self.shelve_measurements(load_shelve=True)
@@ -300,6 +304,7 @@ class CustomerHostDiagnostics(CustomerHostData):
                                               influx_unit_names,
                                               self.time_from, self.time_to,
                                               measurement_unit_filter,
+                                              self.time_zone,
                                               print_influx_query_request=False)
 
                 measurement_unit_filter_names = []
@@ -318,7 +323,8 @@ class CustomerHostDiagnostics(CustomerHostData):
                 influx_np_data = np.array(influx_data)
                 influx_np_feature_samples = influx_np_data.shape[0]
                 if influx_np_feature_samples != 0:
-                    influx_pd_date = pd.to_datetime(influx_np_data[:, 0])
+                    influx_pd_date = pd.to_datetime(influx_np_data[:, 0],
+                                                    utc=True)
                     influx_np_values = influx_np_data[:, 1:]
                     influx_pd_data = pd.DataFrame(
                         influx_np_values, dtype='float64',
@@ -337,7 +343,8 @@ class CustomerHostDiagnostics(CustomerHostData):
         shelve_filename += '{0}_'.format(self.customer_name)
         shelve_filename += '{0}_'.format(self.host_name)
         shelve_filename += '{0}_'.format(self.time_from_code)
-        shelve_filename += '{0}'.format(self.time_to_code)
+        shelve_filename += '{0}_'.format(self.time_to_code)
+        shelve_filename += '{0}'.format(self.time_zone_code)
         shelve_message = ''
         shelve_message += '{0} '.format(shelve_filename)
         if load_shelve:
@@ -359,11 +366,25 @@ class CustomerHostDiagnostics(CustomerHostData):
             shelve_file['host_name'] = self.host_name
             shelve_file['time_from'] = self.time_from
             shelve_file['time_to'] = self.time_to
+            shelve_file['time_zone_code'] = self.time_zone_code
             shelve_file['measure_pd_dataframes'] = self.measure_pd_dataframes
             shelve_file.close()
             shelve_message += 'has been SAVED in the shelve file.'
         print(shelve_message)
         return True
+
+    def preprocess_measurements(self):
+        if self.measure_pd_dataframes:
+            self.measure_pd_dataframes = data_sampler.pad_pd_dataframes(
+                self.measure_pd_dataframes, self.time_from, self.time_to,
+                self.time_zone)
+            self.measure_pd_dataframes = data_sampler.resample_pd_dataframes(
+                self.measure_pd_dataframes)
+            self.measure_pd_dataframes = data_sampler.fill_pd_dataframes(
+                self.measure_pd_dataframes)
+            return self.measure_pd_dataframes
+        else:
+            return False
 
 
 class UnitFilters:

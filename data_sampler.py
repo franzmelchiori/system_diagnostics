@@ -108,14 +108,17 @@ def get_pd_dataframes_down_rounded_sampling_period(pd_dataframes,
     return pd_dataframes_down_rounded_sampling_period
 
 
-def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end):
+def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end,
+                      time_zone):
     """
        For each series in each dataframe, pad_pd_dataframes pads an
        entry at the beginning and one at the end respectedly with the
        first and the last available values at the given timestamps.
     """
-    pd_index_start = pd.to_datetime([timestamp_start])
-    pd_index_end = pd.to_datetime([timestamp_end])
+    pd_timezone_index_start = pd.DatetimeIndex([timestamp_start], tz=time_zone)
+    pd_timezone_index_end = pd.DatetimeIndex([timestamp_end], tz=time_zone)
+    pd_utc_index_start = pd.to_datetime(pd_timezone_index_start, utc=True)
+    pd_utc_index_end = pd.to_datetime(pd_timezone_index_end, utc=True)
     pd_padded_dataframes = []
     if pd_dataframes:
         for pd_dataframe in pd_dataframes:
@@ -127,7 +130,7 @@ def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end):
                         if not pd.isnull(pd_series_value):
                             padding_start_dict['{0}'.format(pd_series)] = \
                                 pd.Series(pd_series_value,
-                                          index=pd_index_start)
+                                          index=pd_utc_index_start)
                             break
                 padding_end_dict = {}
                 for pd_series in pd_dataframe.columns:
@@ -142,7 +145,7 @@ def pad_pd_dataframes(pd_dataframes, timestamp_start, timestamp_end):
                         if not pd.isnull(pd_series_back_value):
                             padding_end_dict['{0}'.format(pd_series)] = \
                                 pd.Series(pd_series_back_value,
-                                          index=pd_index_end)
+                                          index=pd_utc_index_end)
                             break
                 pd_dataframe_padding_start = pd.DataFrame(padding_start_dict)
                 pd_dataframe_padding_end = pd.DataFrame(padding_end_dict)
@@ -202,22 +205,30 @@ def main():
     # print(get_down_rounded_sampling_period(7))
     # print(get_sampling_unit('1321s'))
 
+    timestamp_start = '2019-01-29 08:07:36.910000'
+    timestamp_end = '2019-01-29 08:17:36.910000'
+    resampling_timestamp_start = '2019-01-29 08:00:00'
+    resampling_timestamp_end = '2019-01-29 09:00:00'
+    time_zone = 'Europe/Rome'
+
     data_test_01 = np.random.normal(0, 1, 10)
-    index_test_01 = pd.date_range('2019-01-29 08:07:36.910000+01:00',
-                                  periods=10, freq='5T')
-    pd_series_test_01 = pd.Series(data_test_01, index=index_test_01)
+    timezone_index_test_01 = pd.date_range(timestamp_start, periods=10,
+                                           freq='5T', tz=time_zone)
+    utc_index_test_01 = pd.to_datetime(timezone_index_test_01, utc=True)
+    pd_series_test_01 = pd.Series(data_test_01, index=utc_index_test_01)
     data_test_02 = np.random.normal(0, 1, 6)
-    index_test_02 = pd.date_range('2019-01-29 08:17:36.910000+01:00',
-                                  periods=6, freq='5T')
-    pd_series_test_02 = pd.Series(data_test_02, index=index_test_02)
+    timezone_index_test_02 = pd.date_range(timestamp_end, periods=6,
+                                           freq='5T', tz=time_zone)
+    utc_index_test_02 = pd.to_datetime(timezone_index_test_02, utc=True)
+    pd_series_test_02 = pd.Series(data_test_02, index=utc_index_test_02)
     pd_dataframe_test_01 = pd.DataFrame(
         {'pd_series_test_01': pd_series_test_01,
          'pd_series_test_02': pd_series_test_02})
 
     data_test_03 = np.random.normal(0, 1, 10)
-    pd_series_test_03 = pd.Series(data_test_03, index=index_test_01)
+    pd_series_test_03 = pd.Series(data_test_03, index=utc_index_test_01)
     data_test_04 = np.random.normal(0, 1, 6)
-    pd_series_test_04 = pd.Series(data_test_04, index=index_test_02)
+    pd_series_test_04 = pd.Series(data_test_04, index=utc_index_test_02)
     pd_dataframe_test_02 = pd.DataFrame(
         {'pd_series_test_03': pd_series_test_03,
          'pd_series_test_04': pd_series_test_04})
@@ -227,9 +238,10 @@ def main():
     for pd_dataframe in pd_dataframes:
         print(pd_dataframe)
     print()
-    pd_dataframes = pad_pd_dataframes(
-        pd_dataframes,
-        '2019-01-29 08:00:00+01:00', '2019-01-29 09:00:00+01:00')
+    pd_dataframes = pad_pd_dataframes(pd_dataframes,
+                                      resampling_timestamp_start,
+                                      resampling_timestamp_end,
+                                      time_zone)
     pd_dataframes = resample_pd_dataframes(pd_dataframes)
     pd_dataframes = fill_pd_dataframes(pd_dataframes)
     for pd_dataframe in pd_dataframes:
