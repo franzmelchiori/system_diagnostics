@@ -187,6 +187,15 @@ def fill_pd_dataframes(pd_dataframes):
     return pd_filled_dataframes
 
 
+def join_pd_dataframes(pd_dataframes):
+    if pd_dataframes:
+        pd_joined_dataframe = pd_dataframes[0]
+        for pd_dataframe in pd_dataframes[1:]:
+            if not pd_dataframe.empty:
+                pd_joined_dataframe = pd_joined_dataframe.join(pd_dataframe)
+    return pd_joined_dataframe
+
+
 def get_sampling_unit(sampling_precision):
     available_sampling_units = ['m', 's', 'ms']
     available_sampling_units_string = ''.join(available_sampling_units)
@@ -205,19 +214,21 @@ def main():
     # print(get_down_rounded_sampling_period(7))
     # print(get_sampling_unit('1321s'))
 
-    timestamp_start = '2019-01-29 08:07:36.910000'
-    timestamp_end = '2019-01-29 08:17:36.910000'
+    timestamp_start_01 = '2019-01-29 08:07:36.910000'
+    timestamp_start_02 = '2019-01-29 08:17:36.910000'
+    timestamp_start_03 = '2019-01-29 08:03:36.910000'
+    timestamp_start_04 = '2019-01-29 08:13:36.910000'
     resampling_timestamp_start = '2019-01-29 08:00:00'
     resampling_timestamp_end = '2019-01-29 09:00:00'
     time_zone = 'Europe/Rome'
 
     data_test_01 = np.random.normal(0, 1, 10)
-    timezone_index_test_01 = pd.date_range(timestamp_start, periods=10,
+    timezone_index_test_01 = pd.date_range(timestamp_start_01, periods=10,
                                            freq='5T', tz=time_zone)
     utc_index_test_01 = pd.to_datetime(timezone_index_test_01, utc=True)
     pd_series_test_01 = pd.Series(data_test_01, index=utc_index_test_01)
     data_test_02 = np.random.normal(0, 1, 6)
-    timezone_index_test_02 = pd.date_range(timestamp_end, periods=6,
+    timezone_index_test_02 = pd.date_range(timestamp_start_02, periods=6,
                                            freq='5T', tz=time_zone)
     utc_index_test_02 = pd.to_datetime(timezone_index_test_02, utc=True)
     pd_series_test_02 = pd.Series(data_test_02, index=utc_index_test_02)
@@ -226,9 +237,15 @@ def main():
          'pd_series_test_02': pd_series_test_02})
 
     data_test_03 = np.random.normal(0, 1, 10)
-    pd_series_test_03 = pd.Series(data_test_03, index=utc_index_test_01)
+    timezone_index_test_03 = pd.date_range(timestamp_start_03, periods=10,
+                                           freq='5T', tz=time_zone)
+    utc_index_test_03 = pd.to_datetime(timezone_index_test_03, utc=True)
+    pd_series_test_03 = pd.Series(data_test_03, index=utc_index_test_03)
     data_test_04 = np.random.normal(0, 1, 6)
-    pd_series_test_04 = pd.Series(data_test_04, index=utc_index_test_02)
+    timezone_index_test_04 = pd.date_range(timestamp_start_04, periods=6,
+                                           freq='5T', tz=time_zone)
+    utc_index_test_04 = pd.to_datetime(timezone_index_test_04, utc=True)
+    pd_series_test_04 = pd.Series(data_test_04, index=utc_index_test_04)
     pd_dataframe_test_02 = pd.DataFrame(
         {'pd_series_test_03': pd_series_test_03,
          'pd_series_test_04': pd_series_test_04})
@@ -244,9 +261,11 @@ def main():
                                       time_zone)
     pd_dataframes = resample_pd_dataframes(pd_dataframes)
     pd_dataframes = fill_pd_dataframes(pd_dataframes)
-    for pd_dataframe in pd_dataframes:
-        print(pd_dataframe)
-    data_viewer.view_pd_dataframes(pd_dataframes)
+    pd_joineddataframe = join_pd_dataframes(pd_dataframes)
+    # for pd_dataframe in pd_dataframes:
+    #     print(pd_dataframe)
+    # data_viewer.view_pd_dataframes(pd_dataframes)
+    print(pd_joineddataframe)
 
 
 if __name__ == '__main__':

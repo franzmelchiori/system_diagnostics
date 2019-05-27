@@ -24,11 +24,11 @@
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
 
-plt.style.use('seaborn-whitegrid')
+plt.style.use('seaborn-dark')
 register_matplotlib_converters()
 
 
-def view_pd_dataframe(pd_dataframe):
+def view_pd_dataframe(pd_dataframe, legend=True):
     pd_dataframe_keys = pd_dataframe.keys()
     pd_dataframe_keys_size = pd_dataframe_keys.size
     if pd_dataframe_keys_size == 1:
@@ -44,7 +44,8 @@ def view_pd_dataframe(pd_dataframe):
             pd_dataframe_label = pd_dataframe.keys()[key_count]
             ax[key_count].plot(pd_dataframe[pd_dataframe_key])
             ax[key_count].set(label=pd_dataframe_label)
-            ax[key_count].legend()
+            if legend:
+                ax[key_count].legend()
     plt.show()
     return True
 

@@ -251,6 +251,7 @@ class CustomerHostDiagnostics(CustomerHostData):
         self.time_to_code = self.time_to_code.replace(':', '')
         self.time_zone_code = self.time_zone.replace('/', '')
         self.measure_pd_dataframes = []
+        self.measure_pd_joined_dataframe = pd.DataFrame()
         if local_data:
             self.shelve_measurements(load_shelve=True)
         else:
@@ -382,7 +383,9 @@ class CustomerHostDiagnostics(CustomerHostData):
                 self.measure_pd_dataframes)
             self.measure_pd_dataframes = data_sampler.fill_pd_dataframes(
                 self.measure_pd_dataframes)
-            return self.measure_pd_dataframes
+            self.measure_pd_joined_dataframe = data_sampler.join_pd_dataframes(
+                self.measure_pd_dataframes)
+            return self.measure_pd_joined_dataframe
         else:
             return False
 
