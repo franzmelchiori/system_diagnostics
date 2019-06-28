@@ -196,6 +196,31 @@ def join_pd_dataframes(pd_dataframes):
     return pd_joined_dataframe
 
 
+def sample_datastates(pd_dataframe, event_minimum_period='10m'):
+    pd_dataframe_sample_amount = pd_dataframe.index.size
+    pd_dataframe_sample_period = pd_dataframe.index.freq.delta
+    pd_event_minimum_period = pd.to_timedelta(event_minimum_period)
+    event_minimum_samples = int(pd_event_minimum_period //
+                                pd_dataframe_sample_period)
+    if event_minimum_samples % 2:
+        event_minimum_samples += 1
+    event_maximum_sampling_period = event_minimum_samples // 2
+    serial_event_amount = int(pd_dataframe_sample_amount //
+                              event_minimum_samples)
+    sampled_event_amount = (serial_event_amount * 2) - 1
+
+    # print('event_maximum_sampling_period: {}'.format(
+    #     event_maximum_sampling_period))
+    # print('event_minimum_samples: {}'.format(
+    #     event_minimum_samples))
+    # print('sampled_event_amount: {}'.format(
+    #     sampled_event_amount))
+
+    # bla = pd_dataframe.iloc[start:end]
+    # pd_dataframe.pivot(bla)
+    return True
+
+
 def get_sampling_unit(sampling_precision):
     available_sampling_units = ['m', 's', 'ms']
     available_sampling_units_string = ''.join(available_sampling_units)
@@ -252,9 +277,9 @@ def main():
 
     pd_dataframes = [pd_dataframe_test_01, pd_dataframe_test_02]
 
-    for pd_dataframe in pd_dataframes:
-        print(pd_dataframe)
-    print()
+    # for pd_dataframe in pd_dataframes:
+    #     print(pd_dataframe)
+    # print()
     pd_dataframes = pad_pd_dataframes(pd_dataframes,
                                       resampling_timestamp_start,
                                       resampling_timestamp_end,
@@ -262,10 +287,16 @@ def main():
     pd_dataframes = resample_pd_dataframes(pd_dataframes)
     pd_dataframes = fill_pd_dataframes(pd_dataframes)
     pd_joineddataframe = join_pd_dataframes(pd_dataframes)
+
     # for pd_dataframe in pd_dataframes:
     #     print(pd_dataframe)
     # data_viewer.view_pd_dataframes(pd_dataframes)
+    data_viewer.view_pd_dataframe(pd_joineddataframe)
     print(pd_joineddataframe)
+
+    event_minimum_period = '15m'
+    pd_datastate_samples = sample_datastates(pd_joineddataframe,
+                                             event_minimum_period)
 
 
 if __name__ == '__main__':
