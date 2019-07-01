@@ -188,6 +188,7 @@ def fill_pd_dataframes(pd_dataframes):
 
 
 def join_pd_dataframes(pd_dataframes):
+    pd_joined_dataframe = pd.DataFrame()
     if pd_dataframes:
         pd_joined_dataframe = pd_dataframes[0]
         for pd_dataframe in pd_dataframes[1:]:
@@ -196,7 +197,7 @@ def join_pd_dataframes(pd_dataframes):
     return pd_joined_dataframe
 
 
-def sample_datastates(pd_dataframe, event_minimum_period='10m'):
+def sample_dataevents(pd_dataframe, event_minimum_period='10m'):
     pd_dataframe_sample_amount = pd_dataframe.index.size
     pd_dataframe_sample_period = pd_dataframe.index.freq.delta
     pd_event_minimum_period = pd.to_timedelta(event_minimum_period)
@@ -216,9 +217,35 @@ def sample_datastates(pd_dataframe, event_minimum_period='10m'):
     # print('sampled_event_amount: {}'.format(
     #     sampled_event_amount))
 
-    # bla = pd_dataframe.iloc[start:end]
-    # pd_dataframe.pivot(bla)
-    return True
+    sampled_event_serial_slices = []
+    for sampled_event_serial_number in range(sampled_event_amount):
+        sampled_event_serial_slice_start = \
+            sampled_event_serial_number * event_maximum_sampling_period
+        sampled_event_serial_slice_end = \
+            sampled_event_serial_slice_start + event_minimum_samples
+        sampled_event_serial_slice = slice(sampled_event_serial_slice_start,
+                                           sampled_event_serial_slice_end)
+        sampled_event_serial_slices.append(sampled_event_serial_slice)
+
+    sampled_events = []
+    for sampled_event_serial_slice in sampled_event_serial_slices:
+        sampled_events.append(pd_dataframe.iloc[sampled_event_serial_slice])
+
+    return sampled_events
+
+
+def transpose_dataevents(pd_dataevents):
+    event_feature_amount = pd_dataevents[0].columns.size
+    event_feature_range = range(1, event_feature_amount)
+    transpose_events = []
+    for pd_dataevent in pd_dataevents:
+        transpose_event = pd_dataevent.T.iloc[0]
+        for event_feature_serial_number in event_feature_range:
+            event_feature = pd_dataevent.T.iloc[event_feature_serial_number]
+            transpose_event = pd.concat([transpose_event, event_feature],
+                                        ignore_index=True)
+        transpose_events.append(transpose_event)
+    return transpose_events
 
 
 def get_sampling_unit(sampling_precision):
@@ -277,9 +304,6 @@ def main():
 
     pd_dataframes = [pd_dataframe_test_01, pd_dataframe_test_02]
 
-    # for pd_dataframe in pd_dataframes:
-    #     print(pd_dataframe)
-    # print()
     pd_dataframes = pad_pd_dataframes(pd_dataframes,
                                       resampling_timestamp_start,
                                       resampling_timestamp_end,
@@ -288,15 +312,12 @@ def main():
     pd_dataframes = fill_pd_dataframes(pd_dataframes)
     pd_joineddataframe = join_pd_dataframes(pd_dataframes)
 
-    # for pd_dataframe in pd_dataframes:
-    #     print(pd_dataframe)
-    # data_viewer.view_pd_dataframes(pd_dataframes)
-    data_viewer.view_pd_dataframe(pd_joineddataframe)
-    print(pd_joineddataframe)
-
-    event_minimum_period = '15m'
-    pd_datastate_samples = sample_datastates(pd_joineddataframe,
+    event_minimum_period = '30m'
+    pd_dataevent_samples = sample_dataevents(pd_joineddataframe,
                                              event_minimum_period)
+    pd_dataevent_transposed_samples = transpose_dataevents(
+        pd_dataevent_samples)
+    # print(pd_dataevent_transposed_samples)
 
 
 if __name__ == '__main__':

@@ -252,6 +252,8 @@ class CustomerHostDiagnostics(CustomerHostData):
         self.time_zone_code = self.time_zone.replace('/', '')
         self.measure_pd_dataframes = []
         self.measure_pd_joined_dataframe = pd.DataFrame()
+        self.measure_pd_dataevent_samples = []
+        self.measure_pd_dataevent_transposed_samples = []
         if local_data:
             self.shelve_measurements(load_shelve=True)
         else:
@@ -374,7 +376,7 @@ class CustomerHostDiagnostics(CustomerHostData):
         print(shelve_message)
         return True
 
-    def preprocess_measurements(self):
+    def preprocess_measurements(self, event_minimum_period='10m'):
         if self.measure_pd_dataframes:
             self.measure_pd_dataframes = data_sampler.pad_pd_dataframes(
                 self.measure_pd_dataframes, self.time_from, self.time_to,
@@ -385,7 +387,12 @@ class CustomerHostDiagnostics(CustomerHostData):
                 self.measure_pd_dataframes)
             self.measure_pd_joined_dataframe = data_sampler.join_pd_dataframes(
                 self.measure_pd_dataframes)
-            return self.measure_pd_joined_dataframe
+            self.measure_pd_dataevent_samples = data_sampler.sample_dataevents(
+                self.measure_pd_joined_dataframe, event_minimum_period)
+            self.measure_pd_dataevent_transposed_samples = \
+                data_sampler.transpose_dataevents(
+                    self.measure_pd_dataevent_samples)
+            return True
         else:
             return False
 
