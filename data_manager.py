@@ -346,7 +346,9 @@ class CustomerHostDiagnostics(CustomerHostData):
                             index=influx_pd_date)
                     else:
                         raise data_exceptions.TimeSeriesMissing(
-                            measurement_name, unit_name)
+                            measurement_name,
+                            unit_name,
+                            "' '".join(filter_names))
                         # influx_pd_data = pd.DataFrame(
                         #     [], dtype='float64',
                         #     columns=[measurement_unit_filter_name],

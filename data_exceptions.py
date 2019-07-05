@@ -46,6 +46,8 @@ class TimeSeriesMissing(Exception):
     def __str__(self):
         exception_message = 'The measurement time series '
         exception_message += "'{0}' ".format(self.measurement_name)
-        exception_message += "with unit '{0}' ".format(self.unit_name)
+        exception_message += "of unit '{0}' ".format(self.unit_name)
+        if self.filter_names:
+            exception_message += "filtered by '{0}' ".format(self.filter_names)
         exception_message += "is missing."
         return exception_message
