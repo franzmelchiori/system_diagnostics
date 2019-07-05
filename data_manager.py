@@ -312,16 +312,20 @@ class CustomerHostDiagnostics(CustomerHostData):
             measurement_unit_filter_names = []
             for unit_name in unit_names:
                 for measurement_filter in measurement_filters:
-                    influx_data = get_influx_data(
-                        self.data_source_ip_port,
-                        self.database_name,
-                        self.host_name,
-                        measurement_name,
-                        unit_name,
-                        self.time_from, self.time_to,
-                        measurement_filter,
-                        self.time_zone,
-                        self.database_queries)
+                    if self.data_source_name == 'influx':
+                        source_data = get_influx_data(
+                            self.data_source_ip_port,
+                            self.database_name,
+                            self.host_name,
+                            measurement_name,
+                            unit_name,
+                            self.time_from, self.time_to,
+                            measurement_filter,
+                            self.time_zone,
+                            self.database_queries)
+                    else:
+                        raise data_exceptions.DataSourceUnknown(
+                            self.data_source_name)
 
                     filter_names = []
                     for filter_rule in measurement_filter:
@@ -334,16 +338,16 @@ class CustomerHostDiagnostics(CustomerHostData):
                     measurement_unit_filter_names.append(
                         measurement_unit_filter_name)
 
-                    influx_np_data = np.array(influx_data)
-                    influx_np_feature_samples = influx_np_data.shape[0]
-                    if influx_np_feature_samples != 0:
-                        influx_pd_date = pd.to_datetime(influx_np_data[:, 0],
+                    source_np_data = np.array(source_data)
+                    source_np_feature_samples = source_np_data.shape[0]
+                    if source_np_feature_samples != 0:
+                        source_pd_date = pd.to_datetime(source_np_data[:, 0],
                                                         utc=True)
-                        influx_np_values = influx_np_data[:, 1:]
-                        influx_pd_data = pd.DataFrame(
-                            influx_np_values, dtype='float64',
+                        source_np_values = source_np_data[:, 1:]
+                        source_pd_data = pd.DataFrame(
+                            source_np_values, dtype='float64',
                             columns=[measurement_unit_filter_name],
-                            index=influx_pd_date)
+                            index=source_pd_date)
                     else:
                         raise data_exceptions.TimeSeriesMissing(
                             measurement_name,
@@ -353,7 +357,7 @@ class CustomerHostDiagnostics(CustomerHostData):
                         #     [], dtype='float64',
                         #     columns=[measurement_unit_filter_name],
                         #     index=[])
-                    self.measure_pd_dataframes.append(influx_pd_data)
+                    self.measure_pd_dataframes.append(source_pd_data)
         return True
 
     def shelve_measurements(self, load_shelve=False):

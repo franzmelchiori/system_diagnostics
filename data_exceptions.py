@@ -36,9 +36,20 @@ class DataNotFound(Exception):
         return exception_message
 
 
+class DataSourceUnknown(Exception):
+    def __init__(self, data_source_name):
+        self.data_source_name = data_source_name
+
+    def __str__(self):
+        exception_message = 'The data source '
+        exception_message += "'{0}' ".format(self.data_source_name)
+        exception_message += "is unknown."
+        return exception_message
+
+
 class TimeSeriesMissing(Exception):
 
-    def __init__(self, measurement_name='', unit_name='', filter_names=''):
+    def __init__(self, measurement_name, unit_name, filter_names=''):
         self.measurement_name = measurement_name
         self.unit_name = unit_name
         self.filter_names = filter_names
