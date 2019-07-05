@@ -34,6 +34,7 @@ import pandas as pd
 import dateutil.parser as dateparse
 
 import data_sampler
+import data_exceptions
 
 
 class CustomerNetworkData:
@@ -61,8 +62,8 @@ class CustomerNetworkData:
             if customer_data['customer_name'] == self.customer_name:
                 self.networks = customer_data['networks']
         if not self.networks:
-            raise DataNotFound(data_name=self.customer_name,
-                               source_name='customers')
+            raise data_exceptions.DataNotFound(data_name=self.customer_name,
+                                               source_name='customers')
         return True
 
 
@@ -86,8 +87,8 @@ class CustomerSourceData(CustomerNetworkData):
             if network['network_name'] == self.network_name:
                 self.data_sources = network['data_sources']
         if not self.data_sources:
-            raise DataNotFound(data_name=self.network_name,
-                               source_name='networks')
+            raise data_exceptions.DataNotFound(data_name=self.network_name,
+                                               source_name='networks')
         return True
 
 
@@ -119,8 +120,8 @@ class CustomerDBData(CustomerSourceData):
                 self.data_source_ip_port = data_source['data_source_ip_port']
                 self.databases = data_source['databases']
         if not self.databases:
-            raise DataNotFound(data_name=self.data_source_name,
-                               source_name='data_sources')
+            raise data_exceptions.DataNotFound(data_name=self.data_source_name,
+                                               source_name='data_sources')
         return True
 
 
@@ -152,8 +153,8 @@ class CustomerHostData(CustomerDBData):
             if database['database_name'] == self.database_name:
                 self.hosts = database['hosts']
         if not self.hosts:
-            raise DataNotFound(data_name=self.database_name,
-                               source_name='databases')
+            raise data_exceptions.DataNotFound(data_name=self.database_name,
+                                               source_name='databases')
         return True
 
 
@@ -187,8 +188,8 @@ class CustomerMeasureData(CustomerHostData):
             if host['host_name'] == self.host_name:
                 self.measurements = host['measurements']
         if not self.measurements:
-            raise DataNotFound(data_name=self.host_name,
-                               source_name='hosts')
+            raise data_exceptions.DataNotFound(data_name=self.host_name,
+                                               source_name='hosts')
         return True
 
 
@@ -225,16 +226,24 @@ class CustomerUnitData(CustomerMeasureData):
             if measurement['measurement_name'] == self.measurement_name:
                 self.units = measurement['units']
         if not self.units:
-            raise DataNotFound(data_name=self.measurement_name,
-                               source_name='measurements')
+            raise data_exceptions.DataNotFound(data_name=self.measurement_name,
+                                               source_name='measurements')
         return True
 
 
 class CustomerHostDiagnostics(CustomerHostData):
+    """
+    CustomerHostDiagnostics can manage the data collection and wrangling
+    of a given customer host in a given period of time as a first step
+    of a diagnostics pipeline.
 
+    Details about the database connection, measurements, units and
+    filters to query are properly structured in the input JSON file.
+    """
     def __init__(self, customer_name, network_name, data_source_name,
                  database_name, host_name, time_from, time_to,
-                 time_zone='Europe/Rome', json_path='', local_data=False):
+                 time_zone='Europe/Rome', json_path='', local_data=False,
+                 database_queries=False):
         CustomerHostData.__init__(self, customer_name, network_name,
                                   data_source_name, database_name, json_path)
         self.host_name = host_name
@@ -250,6 +259,7 @@ class CustomerHostDiagnostics(CustomerHostData):
         self.time_to_code = self.time_to_code.replace(' ', '')
         self.time_to_code = self.time_to_code.replace(':', '')
         self.time_zone_code = self.time_zone.replace('/', '')
+        self.database_queries = database_queries
         self.measure_pd_dataframes = []
         self.measure_pd_joined_dataframe = pd.DataFrame()
         self.measure_pd_dataevent_samples = []
@@ -284,61 +294,64 @@ class CustomerHostDiagnostics(CustomerHostData):
             if host['host_name'] == self.host_name:
                 self.measurements = host['measurements']
         if not self.measurements:
-            raise DataNotFound(data_name=self.host_name,
-                               source_name='hosts')
+            raise data_exceptions.DataNotFound(data_name=self.host_name,
+                                               source_name='hosts')
         return True
 
     def get_measurements(self):
         for measurement in self.measurements:
-            influx_measurement_name = measurement['measurement_name']
-            influx_unit_names = measurement['units']
-            measurement_unit_filters = [[]]
+            measurement_name = measurement['measurement_name']
+            unit_names = measurement['units']
+            measurement_filters = [[]]
 
             if 'filters' in measurement:
                 unit_filter_maps = measurement['filters']
                 unit_filters = UnitFilters(unit_filter_maps)
-                measurement_unit_filters = unit_filters.lists
+                measurement_filters = unit_filters.lists
 
-            for measurement_unit_filter in measurement_unit_filters:
-                influx_data = get_influx_data(self.data_source_ip_port,
-                                              self.database_name,
-                                              self.host_name,
-                                              influx_measurement_name,
-                                              influx_unit_names,
-                                              self.time_from, self.time_to,
-                                              measurement_unit_filter,
-                                              self.time_zone,
-                                              print_influx_query_request=False)
+            measurement_unit_filter_names = []
+            for unit_name in unit_names:
+                for measurement_filter in measurement_filters:
+                    influx_data = get_influx_data(
+                        self.data_source_ip_port,
+                        self.database_name,
+                        self.host_name,
+                        measurement_name,
+                        unit_name,
+                        self.time_from, self.time_to,
+                        measurement_filter,
+                        self.time_zone,
+                        self.database_queries)
 
-                measurement_unit_filter_names = []
-                for influx_unit_name in influx_unit_names:
                     filter_names = []
-                    for filter_rule in measurement_unit_filter:
+                    for filter_rule in measurement_filter:
                         filter_name = filter_rule.rsplit(' = ', maxsplit=1)[1]
                         filter_name = filter_name.strip("'")
                         filter_names.append(filter_name)
                     measurement_unit_filter_name = '_'.join(
-                        [influx_measurement_name, influx_unit_name] +
+                        [measurement_name, unit_name] +
                         filter_names)
                     measurement_unit_filter_names.append(
                         measurement_unit_filter_name)
 
-                influx_np_data = np.array(influx_data)
-                influx_np_feature_samples = influx_np_data.shape[0]
-                if influx_np_feature_samples != 0:
-                    influx_pd_date = pd.to_datetime(influx_np_data[:, 0],
-                                                    utc=True)
-                    influx_np_values = influx_np_data[:, 1:]
-                    influx_pd_data = pd.DataFrame(
-                        influx_np_values, dtype='float64',
-                        columns=measurement_unit_filter_names,
-                        index=influx_pd_date)
-                else:
-                    influx_pd_data = pd.DataFrame(
-                        [], dtype='float64',
-                        columns=measurement_unit_filter_names,
-                        index=[])
-                self.measure_pd_dataframes.append(influx_pd_data)
+                    influx_np_data = np.array(influx_data)
+                    influx_np_feature_samples = influx_np_data.shape[0]
+                    if influx_np_feature_samples != 0:
+                        influx_pd_date = pd.to_datetime(influx_np_data[:, 0],
+                                                        utc=True)
+                        influx_np_values = influx_np_data[:, 1:]
+                        influx_pd_data = pd.DataFrame(
+                            influx_np_values, dtype='float64',
+                            columns=[measurement_unit_filter_name],
+                            index=influx_pd_date)
+                    else:
+                        raise data_exceptions.TimeSeriesMissing(
+                            measurement_name, unit_name)
+                        # influx_pd_data = pd.DataFrame(
+                        #     [], dtype='float64',
+                        #     columns=[measurement_unit_filter_name],
+                        #     index=[])
+                    self.measure_pd_dataframes.append(influx_pd_data)
         return True
 
     def shelve_measurements(self, load_shelve=False):
@@ -381,17 +394,23 @@ class CustomerHostDiagnostics(CustomerHostData):
             self.measure_pd_dataframes = data_sampler.pad_pd_dataframes(
                 self.measure_pd_dataframes, self.time_from, self.time_to,
                 self.time_zone)
+            print('Data sampler | pad_pd_dataframes DONE.')
             self.measure_pd_dataframes = data_sampler.resample_pd_dataframes(
                 self.measure_pd_dataframes)
+            print('Data sampler | resample_pd_dataframes DONE.')
             self.measure_pd_dataframes = data_sampler.fill_pd_dataframes(
                 self.measure_pd_dataframes)
+            print('Data sampler | fill_pd_dataframes DONE.')
             self.measure_pd_joined_dataframe = data_sampler.join_pd_dataframes(
                 self.measure_pd_dataframes)
+            print('Data sampler | join_pd_dataframes DONE.')
             self.measure_pd_dataevent_samples = data_sampler.sample_dataevents(
                 self.measure_pd_joined_dataframe, event_minimum_period)
+            print('Data sampler | sample_dataevents DONE.')
             self.measure_pd_dataevent_transposed_samples = \
                 data_sampler.transpose_dataevents(
                     self.measure_pd_dataevent_samples)
+            print('Data sampler | transpose_dataevents DONE.')
             return True
         else:
             return False
@@ -434,21 +453,6 @@ class UnitFilters:
         return filters
 
 
-class DataNotFound(Exception):
-
-    def __init__(self, data_name='', source_name=''):
-        self.data_name = data_name
-        self.source_name = source_name
-
-    def __str__(self):
-        exception_message = ''
-        if self.data_name:
-            exception_message += "'{0}'".format(self.data_name)
-        if self.source_name:
-            exception_message += " from '{0}'".format(self.source_name)
-        return exception_message
-
-
 def load_json(file_path):
     try:
         json_file = open(file_path)
@@ -470,6 +474,8 @@ def get_influx_data(influx_ip_port, database_name, host_name,
     influx_base_url = 'http://{}/query'.format(influx_ip_port)
     influx_query_list = []
     influx_query_units = 'SELECT '
+    if isinstance(unit_names, str):
+        unit_names = [unit_names]
     influx_query_units += '"{}"'.format('", "'.join(unit_names))
     influx_query_list.append(influx_query_units)
     influx_query_measurement = 'FROM {}'.format(measurement_name)
