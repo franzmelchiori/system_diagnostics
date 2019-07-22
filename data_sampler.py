@@ -231,21 +231,24 @@ def sample_dataevents(pd_dataframe, event_minimum_period='10m'):
     for sampled_event_serial_slice in sampled_event_serial_slices:
         sampled_events.append(pd_dataframe.iloc[sampled_event_serial_slice])
 
-    return sampled_events
+    return sampled_events, event_minimum_samples
 
 
 def transpose_dataevents(pd_dataevents):
     event_feature_amount = pd_dataevents[0].columns.size
     event_feature_range = range(1, event_feature_amount)
     transpose_events = []
+    event_timestamps = []
     for pd_dataevent in pd_dataevents:
         transpose_event = pd_dataevent.T.iloc[0]
+        event_timestamp = pd_dataevent.index[0]
         for event_feature_serial_number in event_feature_range:
             event_feature = pd_dataevent.T.iloc[event_feature_serial_number]
             transpose_event = pd.concat([transpose_event, event_feature],
                                         ignore_index=True)
         transpose_events.append(transpose_event)
-    return transpose_events
+        event_timestamps.append(event_timestamp)
+    return transpose_events, event_timestamps
 
 
 def get_sampling_unit(sampling_precision):
@@ -313,11 +316,25 @@ def main():
     pd_joineddataframe = join_pd_dataframes(pd_dataframes)
 
     event_minimum_period = '30m'
-    pd_dataevent_samples = sample_dataevents(pd_joineddataframe,
-                                             event_minimum_period)
-    pd_dataevent_transposed_samples = transpose_dataevents(
-        pd_dataevent_samples)
-    # print(pd_dataevent_transposed_samples)
+    pd_dataevent_samples, pd_dataevent_sample_length = \
+        sample_dataevents(pd_joineddataframe, event_minimum_period)
+    pd_dataevent_transposed_samples, pd_dataevent_sample_timestamps = \
+        transpose_dataevents(pd_dataevent_samples)
+    print('pd_joineddataframe:')
+    print(pd_joineddataframe)
+    print('')
+    print('pd_dataevent_samples:')
+    print(pd_dataevent_samples)
+    print('')
+    print('pd_dataevent_sample_length:')
+    print(pd_dataevent_sample_length)
+    print('')
+    print('pd_dataevent_transposed_samples:')
+    print(pd_dataevent_transposed_samples)
+    print('')
+    print('pd_dataevent_sample_timestamps:')
+    print(pd_dataevent_sample_timestamps)
+    print('')
 
 
 if __name__ == '__main__':

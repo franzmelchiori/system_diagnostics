@@ -243,7 +243,7 @@ class CustomerHostDiagnostics(CustomerHostData):
     def __init__(self, customer_name, network_name, data_source_name,
                  database_name, host_name, time_from, time_to,
                  time_zone='Europe/Rome', json_path='', local_data=False,
-                 database_queries=False):
+                 database_queries=False, preprocess_data=True):
         CustomerHostData.__init__(self, customer_name, network_name,
                                   data_source_name, database_name, json_path)
         self.host_name = host_name
@@ -263,11 +263,15 @@ class CustomerHostDiagnostics(CustomerHostData):
         self.measure_pd_dataframes = []
         self.measure_pd_joined_dataframe = pd.DataFrame()
         self.measure_pd_dataevent_samples = []
+        self.measure_pd_dataevent_sample_length = 0
         self.measure_pd_dataevent_transposed_samples = []
+        self.measure_pd_dataevent_sample_timestamps = []
         if local_data:
             self.shelve_measurements(load_shelve=True)
         else:
             self.get_measurements()
+            if preprocess_data:
+                self.preprocess_measurements(event_minimum_period='10m')
             self.shelve_measurements()
 
     def __repr__(self):
@@ -374,6 +378,16 @@ class CustomerHostDiagnostics(CustomerHostData):
                 shelve_file = shelve.open(shelve_filename)
                 self.measure_pd_dataframes = shelve_file[
                     'measure_pd_dataframes']
+                self.measure_pd_joined_dataframe = \
+                    shelve_file['measure_pd_joined_dataframe']
+                self.measure_pd_dataevent_samples = \
+                    shelve_file['measure_pd_dataevent_samples']
+                self.measure_pd_dataevent_sample_length = \
+                    shelve_file['measure_pd_dataevent_sample_length']
+                self.measure_pd_dataevent_transposed_samples = \
+                    shelve_file['measure_pd_dataevent_transposed_samples']
+                self.measure_pd_dataevent_sample_timestamps = \
+                    shelve_file['measure_pd_dataevent_sample_timestamps']
                 shelve_file.close()
                 shelve_message += 'has been LOADED from the shelve file.'
             else:
@@ -390,33 +404,53 @@ class CustomerHostDiagnostics(CustomerHostData):
             shelve_file['time_to'] = self.time_to
             shelve_file['time_zone_code'] = self.time_zone_code
             shelve_file['measure_pd_dataframes'] = self.measure_pd_dataframes
+            shelve_file['measure_pd_joined_dataframe'] = \
+                self.measure_pd_joined_dataframe
+            shelve_file['measure_pd_dataevent_samples'] = \
+                self.measure_pd_dataevent_samples
+            shelve_file['measure_pd_dataevent_sample_length'] = \
+                self.measure_pd_dataevent_sample_length
+            shelve_file['measure_pd_dataevent_transposed_samples'] = \
+                self.measure_pd_dataevent_transposed_samples
+            shelve_file['measure_pd_dataevent_sample_timestamps'] = \
+                self.measure_pd_dataevent_sample_timestamps
             shelve_file.close()
             shelve_message += 'has been SAVED in the shelve file.'
         print(shelve_message)
         return True
 
-    def preprocess_measurements(self, event_minimum_period='10m'):
+    def preprocess_measurements(self, event_minimum_period='10m',
+                                verbose=False):
         if self.measure_pd_dataframes:
             self.measure_pd_dataframes = data_sampler.pad_pd_dataframes(
                 self.measure_pd_dataframes, self.time_from, self.time_to,
                 self.time_zone)
-            print('Data sampler | pad_pd_dataframes DONE.')
+            if verbose:
+                print('Data sampler | pad_pd_dataframes DONE.')
             self.measure_pd_dataframes = data_sampler.resample_pd_dataframes(
                 self.measure_pd_dataframes)
-            print('Data sampler | resample_pd_dataframes DONE.')
+            if verbose:
+                print('Data sampler | resample_pd_dataframes DONE.')
             self.measure_pd_dataframes = data_sampler.fill_pd_dataframes(
                 self.measure_pd_dataframes)
-            print('Data sampler | fill_pd_dataframes DONE.')
+            if verbose:
+                print('Data sampler | fill_pd_dataframes DONE.')
             self.measure_pd_joined_dataframe = data_sampler.join_pd_dataframes(
                 self.measure_pd_dataframes)
-            print('Data sampler | join_pd_dataframes DONE.')
-            self.measure_pd_dataevent_samples = data_sampler.sample_dataevents(
-                self.measure_pd_joined_dataframe, event_minimum_period)
-            print('Data sampler | sample_dataevents DONE.')
-            self.measure_pd_dataevent_transposed_samples = \
+            if verbose:
+                print('Data sampler | join_pd_dataframes DONE.')
+            self.measure_pd_dataevent_samples, \
+                self.measure_pd_dataevent_sample_length = \
+                data_sampler.sample_dataevents(
+                    self.measure_pd_joined_dataframe, event_minimum_period)
+            if verbose:
+                print('Data sampler | sample_dataevents DONE.')
+            self.measure_pd_dataevent_transposed_samples, \
+                self.measure_pd_dataevent_sample_timestamps = \
                 data_sampler.transpose_dataevents(
                     self.measure_pd_dataevent_samples)
-            print('Data sampler | transpose_dataevents DONE.')
+            if verbose:
+                print('Data sampler | transpose_dataevents DONE.')
             return True
         else:
             return False
