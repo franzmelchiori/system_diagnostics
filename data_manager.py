@@ -242,8 +242,9 @@ class CustomerHostDiagnostics(CustomerHostData):
     """
     def __init__(self, customer_name, network_name, data_source_name,
                  database_name, host_name, time_from, time_to,
-                 time_zone='Europe/Rome', json_path='', local_data=False,
-                 database_queries=False, preprocess_data=True):
+                 time_zone='Europe/Rome', json_path='',
+                 event_minimum_period='15m', local_data=False,
+                 database_queries=False, preprocess_data=False):
         CustomerHostData.__init__(self, customer_name, network_name,
                                   data_source_name, database_name, json_path)
         self.host_name = host_name
@@ -259,6 +260,7 @@ class CustomerHostDiagnostics(CustomerHostData):
         self.time_to_code = self.time_to_code.replace(' ', '')
         self.time_to_code = self.time_to_code.replace(':', '')
         self.time_zone_code = self.time_zone.replace('/', '')
+        self.event_minimum_period = event_minimum_period
         self.database_queries = database_queries
         self.measure_pd_dataframes = []
         self.measure_pd_joined_dataframe = pd.DataFrame()
@@ -271,7 +273,7 @@ class CustomerHostDiagnostics(CustomerHostData):
         else:
             self.get_measurements()
             if preprocess_data:
-                self.preprocess_measurements(event_minimum_period='10m')
+                self.preprocess_measurements(self.event_minimum_period)
             self.shelve_measurements()
 
     def __repr__(self):
@@ -419,32 +421,43 @@ class CustomerHostDiagnostics(CustomerHostData):
         print(shelve_message)
         return True
 
-    def preprocess_measurements(self, event_minimum_period='10m',
-                                verbose=False):
+    def preprocess_measurements(self, verbose=False):
         if self.measure_pd_dataframes:
             self.measure_pd_dataframes = data_sampler.pad_pd_dataframes(
                 self.measure_pd_dataframes, self.time_from, self.time_to,
                 self.time_zone)
             if verbose:
                 print('Data sampler | pad_pd_dataframes DONE.')
+
             self.measure_pd_dataframes = data_sampler.resample_pd_dataframes(
                 self.measure_pd_dataframes)
             if verbose:
                 print('Data sampler | resample_pd_dataframes DONE.')
+
             self.measure_pd_dataframes = data_sampler.fill_pd_dataframes(
                 self.measure_pd_dataframes)
             if verbose:
                 print('Data sampler | fill_pd_dataframes DONE.')
+
+            self.measure_pd_dataframes = \
+                data_sampler.standardize_pd_dataframes(
+                    self.measure_pd_dataframes)
+            if verbose:
+                print('Data sampler | standardize_pd_dataframes DONE.')
+
             self.measure_pd_joined_dataframe = data_sampler.join_pd_dataframes(
                 self.measure_pd_dataframes)
             if verbose:
                 print('Data sampler | join_pd_dataframes DONE.')
+
             self.measure_pd_dataevent_samples, \
                 self.measure_pd_dataevent_sample_length = \
                 data_sampler.sample_dataevents(
-                    self.measure_pd_joined_dataframe, event_minimum_period)
+                    self.measure_pd_joined_dataframe,
+                    self.event_minimum_period)
             if verbose:
                 print('Data sampler | sample_dataevents DONE.')
+
             self.measure_pd_dataevent_transposed_samples, \
                 self.measure_pd_dataevent_sample_timestamps = \
                 data_sampler.transpose_dataevents(

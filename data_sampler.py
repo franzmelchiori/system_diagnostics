@@ -182,7 +182,10 @@ def fill_pd_dataframes(pd_dataframes):
     if pd_dataframes:
         for pd_dataframe in pd_dataframes:
             if not pd_dataframe.empty:
-                pd_filled_dataframe = pd_dataframe.fillna(method='ffill')
+                pd_filled_dataframe = pd_dataframe.fillna(
+                    method='ffill')
+                pd_filled_dataframe = pd_filled_dataframe.fillna(
+                    method='bfill')
                 pd_filled_dataframes.append(pd_filled_dataframe)
     return pd_filled_dataframes
 
@@ -195,6 +198,21 @@ def join_pd_dataframes(pd_dataframes):
             if not pd_dataframe.empty:
                 pd_joined_dataframe = pd_joined_dataframe.join(pd_dataframe)
     return pd_joined_dataframe
+
+
+def standardize_pd_dataframes(pd_dataframes):
+    pd_standard_dataframes = []
+    if pd_dataframes:
+        for pd_dataframe in pd_dataframes:
+            if not pd_dataframe.empty:
+                pd_averaged_dataframe = pd_dataframe - pd_dataframe.mean()
+                if pd_dataframe.std()[0] != 0:
+                    pd_standard_dataframe = pd_averaged_dataframe /\
+                                            pd_dataframe.std()
+                else:
+                    pd_standard_dataframe = pd_averaged_dataframe
+                pd_standard_dataframes.append(pd_standard_dataframe)
+    return pd_standard_dataframes
 
 
 def sample_dataevents(pd_dataframe, event_minimum_period='10m'):
@@ -313,6 +331,7 @@ def main():
                                       time_zone)
     pd_dataframes = resample_pd_dataframes(pd_dataframes)
     pd_dataframes = fill_pd_dataframes(pd_dataframes)
+    pd_dataframes = standardize_pd_dataframes(pd_dataframes)
     pd_joineddataframe = join_pd_dataframes(pd_dataframes)
 
     event_minimum_period = '30m'
