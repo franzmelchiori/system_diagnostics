@@ -23,6 +23,7 @@
 
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
+from sklearn.decomposition import PCA
 
 plt.style.use('seaborn-dark')
 register_matplotlib_converters()
@@ -54,6 +55,15 @@ def view_pd_dataframes(pd_dataframes):
     for pd_dataframe in pd_dataframes:
         view_pd_dataframe(pd_dataframe)
     return True
+
+
+def scatter_pd_series_2d(pd_series):
+    pca = PCA(n_components=2)
+    pca.fit(pd_series)
+    pd_series_pca = pca.transform(pd_series)
+    pd_series_2d = pca.inverse_transform(pd_series_pca)
+    plt.scatter(pd_series_2d[:, 0], pd_series_2d[:, 1])
+    plt.show()
 
 
 def main():

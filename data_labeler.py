@@ -40,15 +40,16 @@ def main():
 
     anomaly_start = int(sampling_amount/2)
     anomaly_amount = int(sampling_amount/4)
-    anomaly_amplitude = 10
+    anomaly_amplitude = 3
     anomaly_pulse = np.zeros(sampling_amount)
-    anomaly_pulse[anomaly_start:anomaly_start+anomaly_amount] += 1
+    anomaly_pulse[anomaly_start:anomaly_start+anomaly_amount] += \
+        anomaly_amplitude
 
     pd_series_dictionary_test = {}
     series_counter = range(1, series_amount+1)
     for series_number in series_counter:
         data_test = np.random.normal(0, 1, sampling_amount)
-        data_test[:] += anomaly_pulse * anomaly_amplitude
+        data_test[:] += anomaly_pulse
         timezone_index_test = pd.date_range(timestamp_start,
                                             periods=sampling_amount,
                                             freq=sampling_period,
@@ -72,6 +73,7 @@ def main():
     # plt.plot(
     #     pd_dataevent_transposed_samples[pd_dataevent_anomaly_sample_start])
     # plt.show()
+    data_viewer.scatter_pd_series_2d(pd_dataevent_transposed_samples)
 
 
 if __name__ == '__main__':
