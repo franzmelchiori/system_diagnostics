@@ -57,12 +57,27 @@ def view_pd_dataframes(pd_dataframes):
     return True
 
 
-def scatter_pd_series_2d(pd_series):
+def scatter_pd_series_2d(pd_series, pd_series_cluster_labels=None,
+                         pd_series_cluster_centers=None,
+                         pd_series_closest_cluster_center_labels=None):
     pca = PCA(n_components=2)
     pca.fit(pd_series)
     pd_series_pca = pca.transform(pd_series)
     pd_series_2d = pca.inverse_transform(pd_series_pca)
-    plt.scatter(pd_series_2d[:, 0], pd_series_2d[:, 1])
+    point_groups = pd_series_cluster_labels
+    if pd_series_cluster_labels is not None:
+        point_groups = pd_series_cluster_labels
+    plt.scatter(pd_series_2d[:, 0], pd_series_2d[:, 1], c=point_groups)
+    if pd_series_cluster_centers is not None:
+        plt.scatter(pd_series_cluster_centers[:, 0],
+                    pd_series_cluster_centers[:, 1],
+                    marker='x', color='red')
+    if pd_series_closest_cluster_center_labels is not None:
+        for pd_series_closest_cluster_center_label in \
+                pd_series_closest_cluster_center_labels:
+            plt.scatter(
+                pd_series_2d[int(pd_series_closest_cluster_center_label), 0],
+                pd_series_2d[int(pd_series_closest_cluster_center_label), 1])
     plt.show()
 
 

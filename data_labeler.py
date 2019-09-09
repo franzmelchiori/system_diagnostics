@@ -25,9 +25,22 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
+from sklearn.metrics import pairwise_distances_argmin_min
 
 import data_viewer
 import data_sampler
+
+
+def cluster_pd_series(pd_series, cluster_amount=2):
+    kmeans = KMeans(n_clusters=cluster_amount)
+    pd_series_cluster_labels = kmeans.fit_predict(pd_series)
+    pd_series_cluster_centers = kmeans.cluster_centers_
+    pd_series_closest_cluster_center_labels,\
+        bla = pairwise_distances_argmin_min(
+            pd_series_cluster_centers, pd_series)
+    return pd_series_cluster_labels,\
+        pd_series_cluster_centers,\
+        pd_series_closest_cluster_center_labels
 
 
 def main():
@@ -37,10 +50,11 @@ def main():
     event_minimum_period = '1M'
     series_amount = 10
     sampling_amount = 600
+    label_amount = 3  # cluster_amount = 5
 
     anomaly_start = int(sampling_amount/2)
     anomaly_amount = int(sampling_amount/4)
-    anomaly_amplitude = 3
+    anomaly_amplitude = 10
     anomaly_pulse = np.zeros(sampling_amount)
     anomaly_pulse[anomaly_start:anomaly_start+anomaly_amount] += \
         anomaly_amplitude
@@ -59,7 +73,7 @@ def main():
         pd_series_dictionary_name = 'pd_series_test_' + str(series_number)
         pd_series_dictionary_test[pd_series_dictionary_name] = pd_series_test
     pd_dataframe_test = pd.DataFrame(pd_series_dictionary_test)
-    data_viewer.view_pd_dataframe(pd_dataframe_test)
+    # data_viewer.view_pd_dataframe(pd_dataframe_test)
 
     pd_dataevent_samples, pd_dataevent_sample_length = \
         data_sampler.sample_dataevents(pd_dataframe_test,
@@ -73,7 +87,16 @@ def main():
     # plt.plot(
     #     pd_dataevent_transposed_samples[pd_dataevent_anomaly_sample_start])
     # plt.show()
-    data_viewer.scatter_pd_series_2d(pd_dataevent_transposed_samples)
+    # data_viewer.scatter_pd_series_2d(pd_dataevent_transposed_samples)
+
+    pd_series_cluster_labels,\
+        pd_series_cluster_centers,\
+        pd_series_closest_cluster_center_labels = cluster_pd_series(
+            pd_dataevent_transposed_samples, cluster_amount=label_amount)
+    data_viewer.scatter_pd_series_2d(pd_dataevent_transposed_samples,
+                                     pd_series_cluster_labels,
+                                     pd_series_cluster_centers,
+                                     pd_series_closest_cluster_center_labels)
 
 
 if __name__ == '__main__':
