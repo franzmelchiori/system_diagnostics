@@ -33,7 +33,8 @@ import data_sampler
 
 def cluster_pd_series(pd_series, cluster_amount=2):
     kmeans = KMeans(n_clusters=cluster_amount)
-    pd_series_cluster_labels = kmeans.fit_predict(pd_series)
+    kmeans.fit(pd_series)
+    pd_series_cluster_labels = kmeans.predict(pd_series)
     pd_series_cluster_centers = kmeans.cluster_centers_
     pd_series_closest_cluster_center_labels,\
         bla = pairwise_distances_argmin_min(
