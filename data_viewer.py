@@ -57,27 +57,36 @@ def view_pd_dataframes(pd_dataframes):
     return True
 
 
-def scatter_pd_series_2d(pd_series, pd_series_cluster_labels=None,
+def scatter_pd_series_2d(pd_series,
+                         pd_series_cluster_labels=None,
                          pd_series_cluster_centers=None,
-                         pd_series_closest_cluster_center_labels=None):
+                         pd_series_closest_cluster_center_indexes=None):
     pca = PCA(n_components=2)
     pca.fit(pd_series)
     pd_series_pca = pca.transform(pd_series)
     pd_series_2d = pca.inverse_transform(pd_series_pca)
-    point_groups = pd_series_cluster_labels
-    if pd_series_cluster_labels is not None:
-        point_groups = pd_series_cluster_labels
-    plt.scatter(pd_series_2d[:, 0], pd_series_2d[:, 1], c=point_groups)
+    plt.scatter(pd_series_2d[:, 0],
+                pd_series_2d[:, 1],
+                marker='o',
+                alpha=0.3,
+                c=pd_series_cluster_labels)
     if pd_series_cluster_centers is not None:
+        cluster_center_colors = 'red'
+        if pd_series_closest_cluster_center_indexes is not None:
+            pd_series_closest_cluster_centers = pd_series_2d[
+                pd_series_closest_cluster_center_indexes]
+            cluster_center_colors = pd_series_cluster_labels[
+                pd_series_closest_cluster_center_indexes]
+            plt.scatter(pd_series_closest_cluster_centers[:, 0],
+                        pd_series_closest_cluster_centers[:, 1],
+                        marker='o',
+                        alpha=1.0,
+                        c=cluster_center_colors)
         plt.scatter(pd_series_cluster_centers[:, 0],
                     pd_series_cluster_centers[:, 1],
-                    marker='x', color='red')
-    if pd_series_closest_cluster_center_labels is not None:
-        for pd_series_closest_cluster_center_label in \
-                pd_series_closest_cluster_center_labels:
-            plt.scatter(
-                pd_series_2d[int(pd_series_closest_cluster_center_label), 0],
-                pd_series_2d[int(pd_series_closest_cluster_center_label), 1])
+                    marker='x',
+                    alpha=1.0,
+                    c=cluster_center_colors)
     plt.show()
 
 

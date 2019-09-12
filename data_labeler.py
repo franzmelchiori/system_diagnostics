@@ -23,7 +23,6 @@
 
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.metrics import pairwise_distances_argmin_min
 
@@ -36,12 +35,13 @@ def cluster_pd_series(pd_series, cluster_amount=2):
     kmeans.fit(pd_series)
     pd_series_cluster_labels = kmeans.predict(pd_series)
     pd_series_cluster_centers = kmeans.cluster_centers_
-    pd_series_closest_cluster_center_labels,\
-        bla = pairwise_distances_argmin_min(
+    pd_series_closest_cluster_center_indexes,\
+        pd_series_closest_cluster_center_distances\
+        = pairwise_distances_argmin_min(
             pd_series_cluster_centers, pd_series)
     return pd_series_cluster_labels,\
         pd_series_cluster_centers,\
-        pd_series_closest_cluster_center_labels
+        list(pd_series_closest_cluster_center_indexes)
 
 
 def main():
@@ -92,12 +92,13 @@ def main():
 
     pd_series_cluster_labels,\
         pd_series_cluster_centers,\
-        pd_series_closest_cluster_center_labels = cluster_pd_series(
-            pd_dataevent_transposed_samples, cluster_amount=label_amount)
+        pd_series_closest_cluster_center_indexes = cluster_pd_series(
+            pd_series=pd_dataevent_transposed_samples,
+            cluster_amount=label_amount)
     data_viewer.scatter_pd_series_2d(pd_dataevent_transposed_samples,
                                      pd_series_cluster_labels,
                                      pd_series_cluster_centers,
-                                     pd_series_closest_cluster_center_labels)
+                                     pd_series_closest_cluster_center_indexes)
 
 
 if __name__ == '__main__':
