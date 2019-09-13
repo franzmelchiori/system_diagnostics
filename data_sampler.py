@@ -24,8 +24,6 @@
 import numpy as np
 import pandas as pd
 
-import data_viewer
-
 
 def get_pd_dataframe_minimum_sampling_period(pd_dataframe,
                                              sampling_precision='1s'):
