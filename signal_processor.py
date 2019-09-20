@@ -62,6 +62,42 @@ def filter_low_pass(pd_series,
         measures_lpf
 
 
+def plot_signal_filter(pd_series, lpf_harmonic_amount=10):
+    sampling_period_s = 1
+    pd_series_sampling_unit = pd_series.index.freq.name
+    if pd_series_sampling_unit == 'S':
+        sampling_period_s = pd_series.index.freq.n
+    sampling_points = pd_series.values.size
+    processing_period_s = (sampling_points - 1) * sampling_period_s
+    fig, ax = plt.subplots(2)
+    sampling_times = np.linspace(0, processing_period_s, sampling_points)
+    for sampling_time in sampling_times:
+        ax[0].axvline(sampling_time, c='black', alpha=0.02)
+    ax[0].set_xlabel('[s]')
+    ax[0].scatter(pd_series.index.second, pd_series.values,
+                  marker='o', c='green', alpha=0.3)
+    measures_frequencies,\
+        measures_power,\
+        passed_frequencies_mask,\
+        measures_lpf = filter_low_pass(pd_series,
+                                       lpf_harmonic_amount=lpf_harmonic_amount)
+    cutoff_frequencies_mask = np.invert(passed_frequencies_mask)
+    for measures_frequency in measures_frequencies:
+        ax[1].axvline(measures_frequency, c='black', alpha=0.02)
+    ax[1].set_xlabel('[Hz]')
+    ax[1].bar(measures_frequencies[passed_frequencies_mask],
+              measures_power[passed_frequencies_mask],
+              width=0.01,
+              color='#5dade2')
+    ax[1].scatter(measures_frequencies[cutoff_frequencies_mask],
+                  measures_power[cutoff_frequencies_mask],
+                  s=10,
+                  c='red')
+    ax[0].plot(sampling_times, measures_lpf, c='#5dade2')
+    plt.show()
+    return True
+
+
 def signal_to_fit(x, a, b, c, d):
     return a * np.sin(b * x) + c * np.sin(d * x)
 
@@ -82,6 +118,7 @@ def main():
 
     noise_amplitude = 0.5
     interpolation_fraction = 5
+    lpf_harmonic_amount = 10
     lpf_cutoff_frequency = 0.1
 
     scatter_noisy = True
@@ -179,7 +216,7 @@ def main():
         measures_power,\
         passed_frequencies_mask,\
         measures_lpf = filter_low_pass(pd_series,
-                                       lpf_harmonic_amount=10)
+                                       lpf_harmonic_amount=lpf_harmonic_amount)
     cutoff_frequencies_mask = np.invert(passed_frequencies_mask)
     for measures_frequency in measures_frequencies:
         ax[1].axvline(measures_frequency, c='black', alpha=0.02)
@@ -215,6 +252,8 @@ def main():
         ax[1].set_ylabel('welch psd')
         ax[1].set_xlabel('[Hz]')
         plt.show()
+
+    plot_signal_filter(pd_series, lpf_harmonic_amount=5)
 
 
 if __name__ == '__main__':
