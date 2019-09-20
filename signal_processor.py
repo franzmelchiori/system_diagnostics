@@ -36,7 +36,9 @@ plt.style.use('seaborn-dark')
 register_matplotlib_converters()
 
 
-def filter_low_pass(pd_series, lpf_cutoff_frequency=0.1):
+def filter_low_pass(pd_series,
+                    lpf_harmonic_amount=None,
+                    lpf_cutoff_frequency=0.1):
     sampling_period_s = 1
     pd_series_sampling_unit = pd_series.index.freq.name
     if pd_series_sampling_unit == 'S':
@@ -46,7 +48,9 @@ def filter_low_pass(pd_series, lpf_cutoff_frequency=0.1):
     measures_freq = fft(measures_time)
     measures_power = np.abs(measures_freq)
     measures_frequencies = fftfreq(sampling_points, d=sampling_period_s)
-    passed_frequencies_mask = np.abs(measures_frequencies) <\
+    if lpf_harmonic_amount:
+        lpf_cutoff_frequency = measures_frequencies[lpf_harmonic_amount]
+    passed_frequencies_mask = np.abs(measures_frequencies) <=\
         lpf_cutoff_frequency
     measures_freq_lpf = measures_freq.copy()
     cutoff_frequencies_mask = np.invert(passed_frequencies_mask)
@@ -174,7 +178,8 @@ def main():
     measures_frequencies,\
         measures_power,\
         passed_frequencies_mask,\
-        measures_lpf = filter_low_pass(pd_series)
+        measures_lpf = filter_low_pass(pd_series,
+                                       lpf_harmonic_amount=10)
     cutoff_frequencies_mask = np.invert(passed_frequencies_mask)
     for measures_frequency in measures_frequencies:
         ax[1].axvline(measures_frequency, c='black', alpha=0.02)
