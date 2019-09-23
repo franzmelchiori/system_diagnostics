@@ -31,7 +31,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
 
-
 plt.style.use('seaborn-dark')
 register_matplotlib_converters()
 
@@ -62,7 +61,9 @@ def filter_low_pass(pd_series,
         measures_lpf
 
 
-def plot_signal_filter(pd_series, lpf_harmonic_amount=10):
+def plot_signal_filter(pd_series,
+                       lpf_harmonic_amount=10,
+                       lpf_cutoff_frequency=0.1):
     sampling_period_s = 1
     pd_series_sampling_unit = pd_series.index.freq.name
     if pd_series_sampling_unit == 'S':
@@ -74,20 +75,24 @@ def plot_signal_filter(pd_series, lpf_harmonic_amount=10):
     for sampling_time in sampling_times:
         ax[0].axvline(sampling_time, c='black', alpha=0.02)
     ax[0].set_xlabel('[s]')
-    ax[0].scatter(pd_series.index.second, pd_series.values,
+    ax[0].scatter(sampling_times, pd_series.values,
                   marker='o', c='green', alpha=0.3)
     measures_frequencies,\
         measures_power,\
         passed_frequencies_mask,\
-        measures_lpf = filter_low_pass(pd_series,
-                                       lpf_harmonic_amount=lpf_harmonic_amount)
+        measures_lpf = filter_low_pass(
+            pd_series,
+            lpf_harmonic_amount=lpf_harmonic_amount,
+            lpf_cutoff_frequency=lpf_cutoff_frequency)
     cutoff_frequencies_mask = np.invert(passed_frequencies_mask)
+    passed_frequencies_mask[0] = False
+    cutoff_frequencies_mask[0] = False
     for measures_frequency in measures_frequencies:
         ax[1].axvline(measures_frequency, c='black', alpha=0.02)
     ax[1].set_xlabel('[Hz]')
     ax[1].bar(measures_frequencies[passed_frequencies_mask],
               measures_power[passed_frequencies_mask],
-              width=0.01,
+              width=0.003,
               color='#5dade2')
     ax[1].scatter(measures_frequencies[cutoff_frequencies_mask],
                   measures_power[cutoff_frequencies_mask],
@@ -121,18 +126,14 @@ def main():
     lpf_harmonic_amount = 10
     lpf_cutoff_frequency = 0.1
 
+    plot_lab = False
     scatter_noisy = True
-    scatter_interpolation_linear = False
-    scatter_interpolation_cubic = False
-    scatter_fitting = False
+    scatter_interpolation_linear = True
+    scatter_interpolation_cubic = True
+    scatter_fitting = True
     plot_spectrogram_psd = False
 
-    fig, ax = plt.subplots(2)
     sampling_times = np.linspace(0, processing_period_s, sampling_points)
-    for sampling_time in sampling_times:
-        ax[0].axvline(sampling_time, c='black', alpha=0.02)
-    ax[0].set_xlabel('[s]')
-
     harmonic_base = np.sin(harmonic_base_period * sampling_times) *\
         harmonic_base_amplitude
     harmonic_1 = np.sin(harmonic_1_period * sampling_times) *\
@@ -152,20 +153,12 @@ def main():
     measures_noisy = pd.Series(measures_noisy, index=utc_index)
     pd_dataframe = pd.DataFrame({'measures_clean': measures_clean,
                                  'measures_noisy': measures_noisy})
+    pd_series = pd_dataframe['measures_noisy']
 
-    ax[0].scatter(pd_dataframe['measures_clean'].index.second,
-                  pd_dataframe['measures_clean'].values,
-                  marker='o',
-                  c='green',
-                  alpha=0.3)
-    if noise_amplitude > 0:
-        if scatter_noisy:
-            ax[0].scatter(pd_dataframe['measures_noisy'].index.second,
-                          pd_dataframe['measures_noisy'].values,
-                          marker='o',
-                          c='red')
+    if plot_lab:
+        fig, ax = plt.subplots(2)
 
-    if scatter_interpolation_linear:
+    if plot_lab and scatter_interpolation_linear:
         linear_interpolation = interp1d(
             sampling_times[::interpolation_fraction],
             measures_noisy[::interpolation_fraction])
@@ -180,10 +173,11 @@ def main():
                       alpha=0.3)
         ax[0].plot(sampling_times, linear_results, c='purple', alpha=0.3)
 
-    if scatter_interpolation_cubic:
-        cubic_interpolation = interp1d(sampling_times[::interpolation_fraction],
-                                       measures_noisy[::interpolation_fraction],
-                                       kind='cubic')
+    if plot_lab and scatter_interpolation_cubic:
+        cubic_interpolation = interp1d(
+            sampling_times[::interpolation_fraction],
+            measures_noisy[::interpolation_fraction],
+            kind='cubic')
         cubic_results = cubic_interpolation(sampling_times)
         ax[0].scatter(sampling_times[::interpolation_fraction],
                       cubic_results[::interpolation_fraction],
@@ -194,7 +188,7 @@ def main():
                       c='purple')
         ax[0].plot(sampling_times, cubic_results, c='purple')
 
-    if scatter_fitting:
+    if plot_lab and scatter_fitting:
         params, params_covariance = curve_fit(
             signal_to_fit,
             sampling_times[::interpolation_fraction],
@@ -211,27 +205,45 @@ def main():
                       c='blue')
         ax[0].plot(sampling_times, fitting_results, c='blue')
 
-    pd_series = pd_dataframe['measures_noisy']
-    measures_frequencies,\
-        measures_power,\
-        passed_frequencies_mask,\
-        measures_lpf = filter_low_pass(pd_series,
-                                       lpf_harmonic_amount=lpf_harmonic_amount)
-    cutoff_frequencies_mask = np.invert(passed_frequencies_mask)
-    for measures_frequency in measures_frequencies:
-        ax[1].axvline(measures_frequency, c='black', alpha=0.02)
-    ax[1].set_xlabel('[Hz]')
-    ax[1].bar(measures_frequencies[passed_frequencies_mask],
-              measures_power[passed_frequencies_mask],
-              width=0.01,
-              color='#5dade2')
-    ax[1].scatter(measures_frequencies[cutoff_frequencies_mask],
-                  measures_power[cutoff_frequencies_mask],
-                  s=10,
-                  c='red')
-    ax[0].plot(sampling_times, measures_lpf, c='#5dade2')
+    if plot_lab:
+        measures_frequencies,\
+            measures_power,\
+            passed_frequencies_mask,\
+            measures_lpf = filter_low_pass(
+                pd_series,
+                lpf_harmonic_amount=lpf_harmonic_amount,
+                lpf_cutoff_frequency=lpf_cutoff_frequency)
+        cutoff_frequencies_mask = np.invert(passed_frequencies_mask)
 
-    plt.show()
+        for sampling_time in sampling_times:
+            ax[0].axvline(sampling_time, c='black', alpha=0.02)
+        ax[0].set_xlabel('[s]')
+        ax[0].scatter(pd_dataframe['measures_clean'].index.second,
+                      pd_dataframe['measures_clean'].values,
+                      marker='o',
+                      c='green',
+                      alpha=0.3)
+        if noise_amplitude > 0:
+            if scatter_noisy:
+                ax[0].scatter(pd_dataframe['measures_noisy'].index.second,
+                              pd_dataframe['measures_noisy'].values,
+                              marker='o',
+                              c='red')
+
+        for measures_frequency in measures_frequencies:
+            ax[1].axvline(measures_frequency, c='black', alpha=0.02)
+        ax[1].set_xlabel('[Hz]')
+        ax[1].bar(measures_frequencies[passed_frequencies_mask],
+                  measures_power[passed_frequencies_mask],
+                  width=0.01,
+                  color='#5dade2')
+        ax[1].scatter(measures_frequencies[cutoff_frequencies_mask],
+                      measures_power[cutoff_frequencies_mask],
+                      s=10,
+                      c='red')
+        ax[0].plot(sampling_times, measures_lpf, c='#5dade2')
+
+        plt.show()
 
     if plot_spectrogram_psd:
         fig, ax = plt.subplots(2)
@@ -253,7 +265,9 @@ def main():
         ax[1].set_xlabel('[Hz]')
         plt.show()
 
-    plot_signal_filter(pd_series, lpf_harmonic_amount=5)
+    plot_signal_filter(pd_series,
+                       lpf_harmonic_amount=lpf_harmonic_amount,
+                       lpf_cutoff_frequency=lpf_cutoff_frequency)
 
 
 if __name__ == '__main__':
