@@ -120,7 +120,7 @@ def plot_signal_filter(pd_series,
                   half_measures_power,
                   s=10,
                   c='#5dade2')
-    ax[2].set_xlabel('[Hz]')
+    ax[2].set_xlabel('[feat]')
     if show_phase_signal:
         for measures_frequency in measures_frequencies:
             ax[3].axvline(measures_frequency, c='black', alpha=0.02)
