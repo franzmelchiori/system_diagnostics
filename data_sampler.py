@@ -24,6 +24,8 @@
 import numpy as np
 import pandas as pd
 
+import signal_processor
+
 
 def get_pd_dataframe_minimum_sampling_period(pd_dataframe,
                                              sampling_precision='1s'):
@@ -248,6 +250,19 @@ def sample_dataevents(pd_dataframe, event_minimum_period='10m'):
         sampled_events.append(pd_dataframe.iloc[sampled_event_serial_slice])
 
     return sampled_events, event_minimum_samples
+
+
+def filter_low_pass_dataevents(pd_dataevents,
+                               lpf_harmonic_amount=10,
+                               direct_signal=False):
+    pd_dataevents_lpf = []
+    for pd_dataevent in pd_dataevents:
+        pd_dataframe_lpf = signal_processor.filter_low_pass_pd_dataframe(
+            pd_dataevent,
+            lpf_harmonic_amount=lpf_harmonic_amount,
+            direct_signal=direct_signal)
+        pd_dataevents_lpf.append(pd_dataframe_lpf)
+    return pd_dataevents_lpf
 
 
 def transpose_dataevents(pd_dataevents):

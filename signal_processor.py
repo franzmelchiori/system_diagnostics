@@ -63,6 +63,45 @@ def filter_low_pass(pd_series,
         measures_lpf
 
 
+def filter_low_pass_pd_series(pd_series,
+                              lpf_harmonic_amount=10,
+                              direct_signal=False):
+    measures_frequencies,\
+        measures_power,\
+        measures_phases,\
+        passed_frequencies_mask,\
+        measures_lpf = filter_low_pass(
+            pd_series,
+            lpf_harmonic_amount=lpf_harmonic_amount)
+    if not direct_signal:
+        passed_frequencies_mask[0] = False
+    passed_half_frequencies_mask_size = int(passed_frequencies_mask.size/2)
+    passed_half_frequencies_mask = passed_frequencies_mask[:]
+    passed_half_frequencies_mask[passed_half_frequencies_mask_size:] = False
+    passed_half_frequencies = \
+        measures_frequencies[passed_half_frequencies_mask]
+    half_measures_power = measures_power[passed_half_frequencies_mask]
+    pd_series_lpf = pd.Series(half_measures_power,
+                              index=passed_half_frequencies)
+    return pd_series_lpf
+
+
+def filter_low_pass_pd_dataframe(pd_dataframe,
+                                 lpf_harmonic_amount=10,
+                                 direct_signal=False):
+    pd_dataframe_lpf = {}
+    pd_series_names = pd_dataframe.columns
+    for pd_series_name in pd_series_names:
+        pd_series = pd_dataframe[pd_series_name]
+        pd_series_lpf = filter_low_pass_pd_series(
+            pd_series,
+            lpf_harmonic_amount=lpf_harmonic_amount,
+            direct_signal=direct_signal)
+        pd_dataframe_lpf[pd_series_name] = pd_series_lpf
+    pd_dataframe_lpf = pd.DataFrame(pd_dataframe_lpf)
+    return pd_dataframe_lpf
+
+
 def plot_signal_filter(pd_series,
                        lpf_harmonic_amount=10,
                        lpf_cutoff_frequency=0.1,

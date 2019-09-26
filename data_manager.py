@@ -261,11 +261,13 @@ class CustomerHostDiagnostics(CustomerHostData):
         self.time_to_code = self.time_to_code.replace(':', '')
         self.time_zone_code = self.time_zone.replace('/', '')
         self.event_minimum_period = event_minimum_period
+        self.lpf_harmonic_amount = 10
         self.database_queries = database_queries
         self.measure_pd_dataframes = []
         self.measure_pd_joined_dataframe = pd.DataFrame()
         self.measure_pd_dataevent_samples = []
         self.measure_pd_dataevent_sample_length = 0
+        self.measure_pd_dataevent_frequency_samples = []
         self.measure_pd_dataevent_transposed_samples = []
         self.measure_pd_dataevent_sample_timestamps = []
         if local_data:
@@ -386,6 +388,8 @@ class CustomerHostDiagnostics(CustomerHostData):
                     shelve_file['measure_pd_dataevent_samples']
                 self.measure_pd_dataevent_sample_length = \
                     shelve_file['measure_pd_dataevent_sample_length']
+                self.measure_pd_dataevent_frequency_samples = \
+                    shelve_file['measure_pd_dataevent_frequency_samples']
                 self.measure_pd_dataevent_transposed_samples = \
                     shelve_file['measure_pd_dataevent_transposed_samples']
                 self.measure_pd_dataevent_sample_timestamps = \
@@ -412,6 +416,8 @@ class CustomerHostDiagnostics(CustomerHostData):
                 self.measure_pd_dataevent_samples
             shelve_file['measure_pd_dataevent_sample_length'] = \
                 self.measure_pd_dataevent_sample_length
+            shelve_file['measure_pd_dataevent_frequency_samples'] = \
+                self.measure_pd_dataevent_frequency_samples
             shelve_file['measure_pd_dataevent_transposed_samples'] = \
                 self.measure_pd_dataevent_transposed_samples
             shelve_file['measure_pd_dataevent_sample_timestamps'] = \
@@ -458,10 +464,17 @@ class CustomerHostDiagnostics(CustomerHostData):
             if verbose:
                 print('Data sampler | sample_dataevents DONE.')
 
+            self.measure_pd_dataevent_frequency_samples = \
+                data_sampler.filter_low_pass_dataevents(
+                    self.measure_pd_dataevent_samples,
+                    self.lpf_harmonic_amount)
+            if verbose:
+                print('Data sampler | filter_low_pass_dataevents DONE.')
+
             self.measure_pd_dataevent_transposed_samples, \
                 self.measure_pd_dataevent_sample_timestamps = \
                 data_sampler.transpose_dataevents(
-                    self.measure_pd_dataevent_samples)
+                    self.measure_pd_dataevent_frequency_samples)
             if verbose:
                 print('Data sampler | transpose_dataevents DONE.')
             return True
