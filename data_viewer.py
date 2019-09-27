@@ -43,8 +43,8 @@ def view_pd_dataframe(pd_dataframe, legend=True):
         fig, ax = plt.subplots(pd_dataframe_keys_size)
         for (key_count, pd_dataframe_key) in pd_dataframe_zip:
             pd_dataframe_label = pd_dataframe.keys()[key_count]
-            ax[key_count].plot(pd_dataframe[pd_dataframe_key])
-            ax[key_count].set(label=pd_dataframe_label)
+            ax[key_count].plot(pd_dataframe[pd_dataframe_key],
+                               label=pd_dataframe_label)
             if legend:
                 ax[key_count].legend()
     plt.show()
