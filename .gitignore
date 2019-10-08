@@ -1,7 +1,10 @@
-# pycharm
+# pycharm folder
 .idea
 
-# System diagnostics
+# documentation folder
+docs
+
+# private files
 diagnostics_map*
 private_*
 
