@@ -206,9 +206,9 @@ def main():
     scatter_noisy = True
     scatter_interpolation_linear = False
     scatter_interpolation_cubic = False
-    scatter_fitting = False
+    scatter_fitting = True
     plot_spectrogram_psd = False
-    plot_wavelet_ricker = True
+    plot_wavelet_ricker = False
 
     sampling_times = np.linspace(0, processing_period_s, sampling_points)
     harmonic_base = np.sin(harmonic_base_period * sampling_times + phase) *\
