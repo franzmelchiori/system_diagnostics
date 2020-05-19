@@ -2,7 +2,7 @@
 
 """
     System diagnostics: signal processor
-    Copyright (C) 2019 Francesco Melchiori
+    Copyright (C) 2020 Francesco Melchiori
     <https://www.francescomelchiori.com/>
 
     This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 
 
 import numpy as np
-from numpy.random import default_rng
+from numpy.random import standard_normal
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from scipy.fftpack import fft, fftfreq, fftshift, ifft
@@ -217,8 +217,7 @@ def main():
         harmonic_1_amplitude
     harmonic_2 = np.sin(harmonic_2_period * sampling_times + phase) *\
         harmonic_2_amplitude
-    noise = default_rng().standard_normal(size=sampling_points) *\
-        noise_amplitude
+    noise = standard_normal(size=sampling_points) * noise_amplitude
     measures_clean = harmonic_base + harmonic_1 + harmonic_2
     measures_noisy = measures_clean + noise
     timezone_index = pd.date_range(timestamp_start,
